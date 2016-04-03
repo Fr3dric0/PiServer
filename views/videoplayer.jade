@@ -1,0 +1,18 @@
+extends layout
+block styles
+   link(href="/videojs/video-js.css", rel="stylesheet")
+
+   script(src="/videojs/videojs-ie8.js")
+block header
+
+block content
+   h2(class='sub-header') Videospelar
+
+   video(id="my-video", class="video-js", controls, preload="auto", width="640", height="264", poster="MY_VIDEO_POSTER.jpg", data-setup="{}")
+      source(src="/res/videos/movies/the_martian/the_martian.mp4", type="video/mp4")
+      p(class='vjs-no-js')
+         To view this video please enable JavaScript, and consider upgrading to a web browser that
+         a(target="_blank", href="http://videojs.com/html5-video-support/") supports HTML5 video
+
+block scripts
+   script(src="/videojs/video.js")

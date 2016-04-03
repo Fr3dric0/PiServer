@@ -1,0 +1,77 @@
+extends layout
+block styles
+
+block header
+
+block content
+    h2(class='sub-title') Filmar
+
+    ul(class='media-listing')
+        if movies.length == 0
+            h3(style="text-align: center") Could not load Movie-list
+        else
+            for movie in movies
+                a(href='/videos/'+movie.vidID)
+                    li(class='media-listing-li')
+                        div(class='media-img-container')
+                            img(class='media-img',
+                                src='/res/thumb/'+movie.thumb.small,
+                                alt=movie.vidID)
+
+                        h3(class='media-title')=movie.title
+
+                        table(class='statistics')
+                            tr
+                                td( class='stat-clm', id='stat-genre',
+                                    style='font-size: 0.7em; word-wrap: break-word; width: 40%;')
+                                    strong=movie.genre.join(", ")
+                                td( class='stat-clm', id='stat-rating',
+                                    style='text-align: center')
+                                    img(src='/images/imdb_flat.png', class='stat-rating-ico')
+                                    em &nbsp #{movie.rating}
+                                td(
+                                    class='stat-clm',
+                                    id='stat-viewcount',
+                                    style='text-align: right; padding-left: 0; padding-right: 3%;')
+
+                                    i(  class='glyphicon glyphicon-eye-open',
+                                        style='font-size: 0.8em;')
+                                    em &nbsp #{movie.viewcount}
+
+    h2(class='sub-title') TV-seriar
+
+    ul(class='media-listing', id="tv-shows")
+        if tv_shows.length == 0
+            h3(style='text-align: center') Could not load TV-shows
+        else
+            for tv in tv_shows
+                a(href='/videos/'+tv.vidID)
+                    li(class='media-listing-li')
+                        div(class='media-img-container')
+                            img(class='media-img',
+                                src='/res/thumb/'+tv.thumb.small,
+                                alt=tv.vidID)
+
+                        h3(class='media-title')=tv.title
+
+                        table(class='statistics')
+                            tr
+                                td( class='stat-clm', id='stat-genre',
+                                    style='font-size: 0.7em; word-wrap: break-word; width: 40%;')
+
+                                    if typeof tv.genre != "undefined"
+                                        strong=tv.genre.join(", ")
+                                td( class='stat-clm', id='stat-rating',
+                                    style='text-align: center')
+
+                                    img(src='/images/imdb_flat.png', class='stat-rating-ico')
+                                    em &nbsp #{tv.rating}
+                                td( class='stat-clm',
+                                    id='stat-viewcount',
+                                    style='text-align: right; padding-left: 0; padding-right: 3%;')
+
+                                    i(  class='glyphicon glyphicon-eye-open',
+                                        style='font-size: 0.8em;')
+                                    em &nbsp #{tv.viewcount}
+
+block scripts
