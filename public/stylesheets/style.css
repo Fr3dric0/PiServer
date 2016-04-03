@@ -1,0 +1,163 @@
+*{
+    font-family: "Helvetica";
+}
+body{
+    background-color: #efefef;
+}
+
+.container{
+    background-color: #FFF;
+    padding: 0;
+    width: 80%;
+}
+
+.header{
+    background-color: rgb(21, 171, 237);
+    position: static;
+    top: 0;
+    width: 100%;
+    height: 50px;
+}
+
+.title-container{
+    position: static;
+    margin-top: 0;
+    top: 0;
+    float: left;
+}
+
+.title{
+    font-size: 3.0em;
+    padding-left: 4%;
+    margin-top: 1%;
+    top: 0;
+    color: #FFF;
+}
+
+.sub-title{
+    position: relative;
+    text-align: center;    
+}
+
+.content{
+    position: relative;
+    width: 100%;
+}
+
+.footer{
+    position: relative;
+    width: 100%;
+}
+
+.blur{
+    -webkit-filter: blur(5px);
+    -moz-filter: blur(5px);
+    -o-filter: blur(5px);
+    -ms-filter: blur(5px);
+    filter: blur(5px);
+    -webkit-transition: all .2s ease;
+    -moz-transition: all .2s ease;
+    -o-transition: all .2s ease;
+    -ms-transition: all .2s ease;
+    transition: all .5s ease;
+}
+
+.deblur{
+    -webkit-filter: blur(0px);
+    -moz-filter: blur(0px);
+    -o-filter: blur(0px);
+    -ms-filter: blur(0px);
+    filter: blur(0px);
+}
+
+.media-listing{
+    position: relative;
+    width: 98%;
+    margin-left: 1%;
+    overflow-x: scroll;
+    overflow-y: hidden;
+}
+
+.media-listing-li{
+    background-color: #FFF;
+    position: relative;
+    float: left;
+    display: inline-block;
+    list-style: none;
+    border-radius: 3px;
+    box-shadow: #AAA 0.1em 0.1em 0.2em;
+    
+    width: 200px;
+    height: 250px;
+    margin: 5px;
+    color: #212121;
+    
+    overflow: hidden;
+
+    -webkit-transition: all ease .5s;
+    -moz-transition: all ease .5s;
+    -o-transition: all ease .5s;
+    -ms-transition: all ease .5s;
+    transition: all ease .5s;
+}
+
+
+.media-listing-li:first-child{
+    margin-left: 0;
+}
+
+.media-listing-li:hover{
+    height: 300px;
+}
+
+.media-img-container{
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 75%;
+    overflow: hidden;
+    
+    box-shadow: inset #212121 0em -0.2em 0.3em;
+}
+    
+.media-img{
+   position: absolute;
+   width: 110%; 
+   left: -5%;
+   top: -5%;
+   
+}
+
+.media-title{
+    position: relative;
+    height: 8%;
+    margin-top: 2%;
+    text-align: center;
+    font-size: 1.5em;
+    word-wrap: break-word;
+}
+
+
+.statistics{
+    position: relative;
+    width: 100%;
+    border-top: #ccc solid 1px;
+}
+
+.stat-clm{
+    color: #666;
+    padding-left: 3%;
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+.stat-rating-ico{
+    width: 25px;
+}
+
+
+footer{
+    position: relative;
+    width: 100%;
+}

@@ -1,0 +1,16 @@
+body{
+    background-color: #212121;
+    font-family: Helvetica;
+    color: #efefef;
+}
+.sub-title{
+    position: relative;
+    font-size: 3.0em;
+    padding: 2%;
+    text-align: center;
+}
+
+.video-js{
+    position: relative;
+    margin-left: 25%;
+}
