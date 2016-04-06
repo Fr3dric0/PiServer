@@ -1,6 +1,7 @@
 
 var categoryList = $('.category-list-li');
 
+
 // Iterate over each category list element
 categoryList.each(function(idx){
     var li = $('.category-list-li:eq('+idx+')');

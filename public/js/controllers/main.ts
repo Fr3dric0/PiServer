@@ -1,8 +1,8 @@
 // Controller for index.html
 
-var app = angular.module('piserverApp');
+var app = angular.module('piserverApp', []);
 
-app.controller('avdCtrl', ($scope, dataService) => {
+app.controller('AvdCtrl', ($scope) => {
     $scope.avdelingar = {
         images: {
             url: '/images',
