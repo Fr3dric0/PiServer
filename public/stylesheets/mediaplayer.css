@@ -14,3 +14,9 @@ body{
     position: relative;
     margin-left: 25%;
 }
+
+.preview-container{
+    position: absolute;
+    top: 30%;
+    left: -300px;
+}

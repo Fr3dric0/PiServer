@@ -81,8 +81,7 @@ body{
 .media-listing-li{
     background-color: #FFF;
     position: relative;
-    float: left;
-    display: inline-block;
+    display: inline-block; /* Prevents the list from wrapping*/
     list-style: none;
     border-radius: 3px;
     box-shadow: #AAA 0.1em 0.1em 0.2em;
@@ -94,11 +93,11 @@ body{
     
     overflow: hidden;
 
-    -webkit-transition: all ease .5s;
-    -moz-transition: all ease .5s;
-    -o-transition: all ease .5s;
-    -ms-transition: all ease .5s;
-    transition: all ease .5s;
+    -webkit-transition: all ease 1s;
+    -moz-transition: all ease 1s;
+    -o-transition: all ease 1s;
+    -ms-transition: all ease 1s;
+    transition: all ease 1s;
 }
 
 
@@ -106,10 +105,11 @@ body{
     margin-left: 0;
 }
 
+/* DISABLED FOR NOW
 .media-listing-li:hover{
     height: 300px;
 }
-
+*/
 .media-img-container{
     position: relative;
     top: 0;
