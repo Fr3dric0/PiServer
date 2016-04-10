@@ -7,11 +7,11 @@ block header
 block content
   h2(class='sub-title') Avdelingar
 
-  ul(class='category-listing')
+  ul(class='media-listing')
     for media in pages
-      a(href=media.url)
-        li(class='category-list-li')
-          img(class='preview-img blur', src='/images/'+media.tmb_name)
-          h3(class='preview-title')=media.name
+        li(class='media-listing-li')
+          a(href=media.url)
+            img(class='preview-img blur', src='/images/'+media.tmb_name)
+            h3(class='preview-title')=media.name
 block scripts
-  script(src='javascripts/home.js')
+  script(src='js/home.js')

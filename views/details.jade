@@ -38,7 +38,7 @@ block content
          - idx++;
          li
             h3(class='season-number') Season #{idx}
-            ul(class='media-listing')
+            ul(class='media-listing', style="white-space:nowrap;")
                for v in s.episodes
                   - ep++;
                   a(href='/videos/'+video.vidID+'/'+idx+'/'+ep)

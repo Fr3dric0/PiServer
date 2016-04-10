@@ -7,47 +7,52 @@ var router = express.Router();
 var MongoClient = require('mongodb').MongoClient;
 var assert = require('assert');
 var ObjectID = require("mongodb").ObjectID;
+var request = require('request');
 
 var mongoUrl = "mongodb://localhost:27017/PiMediaServer";
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-    MongoClient.connect(mongoUrl, (err, db) =>{
-        assert.equal(null, err);
-        console.log("Connected correctly to server");
+    let movies = [];
+    let tv_show = [];
+    let buffer;
 
-        let videos = db.collection('videos');
-        let movies:Object;
-        let tv_shows:Object;
+    request({
+        uri: 'http://localhost:3000/api/v1/',
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    }, (error, response, body) => {
+        if(error){
+            res.send("Could not load data");
+            return;
+        }
 
-        // Load movie
-        findCollectionData(videos, {type:'movie'}, {details:false, vid_url: false}, (err, m) => {
-            assert.equal(null, err);
-
-            movies = m;
-
-            // load TV-SHOW
-            findCollectionData(videos, {type:'tv-show'}, {details:false, vid_url: false}, (err, v) => {
-                assert.equal(null, err);
-
-                tv_shows = v;
-
-                res.render('videos', {
-                    title: 'PiServer',
-                    movies: movies,
-                    tv_shows: tv_shows
-                });
-
-                db.close();
-            });
+        buffer = JSON.parse(body);
+        for(var i in buffer){
+            if(buffer[i].type == "movie"){
+                movies.push(buffer[i]);
+            }else if(buffer[i].type == "tv-show"){
+                tv_show.push(buffer[i]);
+            }
+        }
 
 
-
+        res.render('videos', {
+            title: "PiServer",
+            movies: movies,
+            tv_shows: tv_show
         });
 
-
-
     });
+    /*
+     res.render('videos', {
+     title: 'PiServer',
+     movies: movies,
+     tv_shows: tv_shows
+     });*/
+
 
 
 });
@@ -62,80 +67,91 @@ router.get('/:vidId', (req, res, next) => {
         res.redirect("/videos");
     }
 
-    //Connect to DB
-    MongoClient.connect(mongoUrl, (err, db) => {
-        assert.equal(null, err);
+    // GET data
+    request({
+        uri:'http://localhost:3000/api/v1/'+vidId,
+        method: 'GET',
+        headers:{
+            "Content-Type": "application/json"
+        }
+    }, (err, response, body) => {
+        if(err){
+            res.send(err);
+            return;
+        }
 
-        //Get video
-        findCollectionData(db.collection('videos'), {vidID: vidId}, {},
-            (err, video) => {
-                //assert.equal(null, err);
+        let video = JSON.parse(body)[0];
 
-                if(err){
-                    res.send(err);
-                    return;
-                }
+        let template:string;
 
-                let template:string;
+        if(typeof video != "undefined"){
 
-                /*
-                * IF video is NOT undefined:
-                *   1. Identify which mediatype the video is
-                *       IF movie: use template 'videoplayer'
-                *           *   When a movie is provided, there is only one video file.
-                *               Therefore we can go directly to the videoplayer
-                *       IF tv-show: use template 'details'
-                *           *   When a tv-show is provided, there are several videofiles available.
-                *               The user must thereby specify which season and episode the user would like to watch.
-                *                   - Specified URL => /videos/:vidID/:season/:ep
-                *
-                * */
-                if(typeof video[0] != "undefined"){
-                    console.log("NOT UNDEFINED");
-
-                    switch (video[0].type) {
-                        case 'movie':
-                            template = 'videoplayer';
-                            break;
-                        case 'tv-show':
-                            template = 'details';
-                    }
-
-
-                    res.render(template, {
-                        title: 'PiServer',
-                        video: video[0]
-                    });
-
-                    db.close();
-
-                }else{
-                    res.send("<h2>Could not find movie: "+vidId+"</h2>");
-                    return;
-                }
-
+            switch(video.type){
+                case 'movie':
+                    template = 'videoplayer';
+                    break;
+                case 'tv-show':
+                    template = 'details';
+                    break;
             }
-        );
+
+            res.render(template, {
+                title: "PiServer",
+                video: video
+            })
+        }else{
+            res.send("<h1>Could not load media with id: "+vidId+"</h1>");
+            return;
+        }
     });
+
 });
 
 
+/**
+ * Episode is unspecified, therefore send the user to the details-page.
+ * */
+router.get('/:vidID/:season', (req, res) => {
+    res.redirect('/videos/'+req.params.vidID);
+    return;
+});
 
-var findCollectionData = (collection, filter:Object, limit:Object, callback:Function) => {
-    collection.find(filter, limit).toArray( (err, res) => {
-        if(err){
-            callback(err, null); // Send error to user
-        }else{
-            callback(null, res);
+
+router.get('/:vidID/:season/:episode', (req, res, next) => {
+    let vidID = req.params.vidID;
+    let season = req.params.season;
+    let episode = req.params.episode;
+
+    let _uri = 'http://localhost:3000';
+
+    request({
+        uri:_uri+'/api/v1/'+vidID+"/"+season+"/"+episode,
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
         }
+    }, (err, response, body) => {
+        if(err){
+            res.send(err);
+            return;
+        }
+
+        let video = JSON.parse(body)[0]; // only take the first element.
+
+        res.render("videoplayer",{
+            title: "PiServer",
+            video: video,
+            conf: {
+                season: season,
+                episode: episode
+            }
+        });
+
+
+
     });
-};
+});
 
-
-var loadJson = (url:String) => {
-    let jsondata = fs.readFileSync(url, 'utf-8');
-    return JSON.parse(jsondata);
-};
 
 
 module.exports = router;
