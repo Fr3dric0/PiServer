@@ -207,8 +207,10 @@ class VideosModel{
     }
 
 
-    saveToDB(){
+    saveToDB():Boolean{
 
+
+        return true;
     }
 
     getData(callback){

@@ -3,20 +3,87 @@ body{
     font-family: Helvetica;
     color: #efefef;
 }
-.sub-title{
-    position: relative;
-    font-size: 3.0em;
-    padding: 2%;
-    text-align: center;
+
+.header{
+    background-color: #1b6d85;
 }
+
+.container{
+    background-color: #333;
+}
+
+.cover-img-container{
+    height: 175px;
+    owerflow: hidden;
+}
+
+.cover-img{
+    -webkit-filter: blur(5px);
+    -moz-filter: blur(5px);
+    -o-filter: blur(5px);
+    -ms-filter: blur(5px);
+    filter: blur(5px);
+    top: -40%;
+}
+
+.sub-title{
+    margin-top: 8%;
+    font-size: 3.3em;
+    text-shadow: #212121 0em 0em 0.8em;
+}
+p.details{
+    font-style: italic;
+    color: #aaa;
+    font-size: 0.9em;
+}
+.stat-clm{
+    color: #ccc;
+    font-size: 0.8em;
+}
+
 
 .video-js{
     position: relative;
-    margin-left: 25%;
 }
 
 .preview-container{
-    position: absolute;
-    top: 30%;
-    left: -300px;
+    position: relative;
+    height: 150px;
+    cursor: pointer;
+    background-color: #444;
+}
+
+.gradient-bg-right{
+    background: -webkit-gradient(linear, left top, right top, from(#444), to(rgba(0,0,0,0)));
+
+    /* Safari 5.1, Chrome 10+ */
+    background: -webkit-linear-gradient(left, #444, rgba(0,0,0,0));
+
+    /* Firefox 3.6+ */
+    background: -moz-linear-gradient(left, #444, rgba(0,0,0,0));
+
+    /* IE 10 */
+    background: -ms-linear-gradient(left, #444, rgba(0,0,0,0));
+
+    /* Opera 11.10+ */
+    background: -o-linear-gradient(left, #444, rgba(0,0,0,0));
+
+}
+
+.gradient-bg-left{
+
+    background: -webkit-gradient(linear, right top, left top, from(#444), to(rgba(0,0,0,0)));
+
+    /* Safari 5.1, Chrome 10+ */
+    background: -webkit-linear-gradient(right, #444, rgba(0,0,0,0));
+
+    /* Firefox 3.6+ */
+    background: -moz-linear-gradient(right, #444, rgba(0,0,0,0));
+
+    /* IE 10 */
+    background: -ms-linear-gradient(right, #444, rgba(0,0,0,0));
+
+    /* Opera 11.10+ */
+    background: -o-linear-gradient(right, #444, rgba(0,0,0,0));
+
 }

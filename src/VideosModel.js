@@ -162,6 +162,7 @@ var VideosModel = (function () {
         }
     }
     VideosModel.prototype.saveToDB = function () {
+        return true;
     };
     VideosModel.prototype.getData = function (callback) {
         var data = {};
