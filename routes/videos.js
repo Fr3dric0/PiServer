@@ -4,18 +4,16 @@
 var express = require('express');
 var fs = require('fs');
 var router = express.Router();
-var MongoClient = require('mongodb').MongoClient;
 var assert = require('assert');
-var ObjectID = require("mongodb").ObjectID;
 var request = require('request');
-var mongoUrl = "mongodb://localhost:27017/PiMediaServer";
+var _uri = "http://localhost:3000";
 /* GET home page. */
 router.get('/', function (req, res, next) {
     var movies = [];
     var tv_show = [];
     var buffer;
     request({
-        uri: 'http://localhost:3000/api/v1/',
+        uri: _uri + '/api/v1/',
         method: "GET",
         headers: {
             "Content-Type": "application/json"
@@ -37,15 +35,10 @@ router.get('/', function (req, res, next) {
         res.render('videos', {
             title: "PiServer",
             movies: movies,
-            tv_shows: tv_show
+            tv_shows: tv_show,
+            user: req.user
         });
     });
-    /*
-     res.render('videos', {
-     title: 'PiServer',
-     movies: movies,
-     tv_shows: tv_shows
-     });*/
 });
 router.get('/:vidId', function (req, res, next) {
     var vidId = req.params.vidId;
@@ -57,7 +50,7 @@ router.get('/:vidId', function (req, res, next) {
     }
     // GET data
     request({
-        uri: 'http://localhost:3000/api/v1/' + vidId,
+        uri: _uri + '/api/v1/' + vidId,
         method: 'GET',
         headers: {
             "Content-Type": "application/json"
@@ -67,12 +60,14 @@ router.get('/:vidId', function (req, res, next) {
             res.send(err);
             return;
         }
-        var video = JSON.parse(body)[0];
+        var video = JSON.parse(body);
         var template;
         if (typeof video != "undefined") {
+            // Decide which template to use
             switch (video.type) {
                 case 'movie':
                     template = 'videoplayer';
+                    incViewcount(vidId);
                     break;
                 case 'tv-show':
                     template = 'details';
@@ -80,7 +75,8 @@ router.get('/:vidId', function (req, res, next) {
             }
             res.render(template, {
                 title: "PiServer",
-                video: video
+                video: validateThumbImages(video),
+                user: req.user
             });
         }
         else {
@@ -89,6 +85,28 @@ router.get('/:vidId', function (req, res, next) {
         }
     });
 });
+/**
+ *
+ *  @desc: Iterates over the template images in the tv-show
+ * */
+function validateThumbImages(vid) {
+    var seasons = vid.seasons;
+    if (typeof seasons != "undefined") {
+        var i = 1;
+        seasons.forEach(function (s) {
+            if (s != null) {
+                if (typeof s.thumb == "undefined") {
+                    var tempUrl = "/small/" + vid.vidID + "_thumb" + i + ".jpg";
+                    s.thumb = tempUrl; // @TODO:ffl validate tempurl truly is a valid filename or not
+                }
+                else {
+                }
+            }
+            i++;
+        });
+    }
+    return vid;
+}
 /**
  * Episode is unspecified, therefore send the user to the details-page.
  * */
@@ -100,7 +118,6 @@ router.get('/:vidID/:season/:episode', function (req, res, next) {
     var vidID = req.params.vidID;
     var season = req.params.season;
     var episode = req.params.episode;
-    var _uri = 'http://localhost:3000';
     request({
         uri: _uri + '/api/v1/' + vidID + "/" + season + "/" + episode,
         method: "GET",
@@ -112,6 +129,7 @@ router.get('/:vidID/:season/:episode', function (req, res, next) {
             res.send(err);
             return;
         }
+        incViewcount(vidID);
         var video = JSON.parse(body)[0]; // only take the first element.
         res.render("videoplayer", {
             title: "PiServer",
@@ -119,9 +137,21 @@ router.get('/:vidID/:season/:episode', function (req, res, next) {
             conf: {
                 season: season,
                 episode: episode
-            }
+            },
+            user: req.user
         });
     });
 });
+function incViewcount(vidID) {
+    request({ uri: "http://localhost:4567/api/v1/" + vidID + "/addview",
+        method: "GET"
+    }, function (err, response, body) {
+        if (err) {
+            console.err(err);
+            return;
+        }
+        //    console.log("Viewcount incremented on "+vidID);
+    });
+}
 module.exports = router;
 //# sourceMappingURL=videos.js.map

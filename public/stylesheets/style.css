@@ -17,6 +17,8 @@ body{
     top: 0;
     width: 100%;
     height: 50px;
+
+    z-index: 10;
 }
 
 .title-container{
@@ -33,6 +35,48 @@ body{
     top: 0;
     color: #FFF;
     z-index: 20;
+}
+
+.user-container{
+    position:relative;
+    top: 0;
+    float: right;
+    padding-right: 2%;
+    padding-top: 1%;
+    width: 30%;
+    color: #efefef;
+}
+
+.btnauth{
+    color: #efefef;
+    font-weight: 800;
+    float: right;
+}
+
+.logout{
+    color: #FF8888;
+    font-weight: 800;
+    padding-left: 4%;
+    float: right;
+}
+
+.profileimg-container{
+    background-color: #398439;
+    position: relative;
+    float: right;
+    margin-right: 2%;
+    top: -5px;
+    width: 2.5em;
+    height:2.5em;
+    overflow: hidden;
+    border-radius: 40px;
+}
+
+.profile-img{
+    position: absolute;
+    top: -0%;
+    left: -10%;
+    height: 100%;
 }
 
 .sub-title{
@@ -89,7 +133,7 @@ body{
     box-shadow: #AAA 0.1em 0.1em 0.2em;
     
     width: 200px;
-    height: 250px;
+    height: 275px;
     margin: 5px;
     color: #212121;
     
@@ -133,10 +177,10 @@ body{
 
 .media-title{
     position: relative;
-    height: 8%;
+    height: 10%;
     margin-top: 2%;
     text-align: center;
-    font-size: 1.5em;
+    font-size: 1.25em;
     word-wrap: break-word;
 }
 

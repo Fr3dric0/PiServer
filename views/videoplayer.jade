@@ -38,18 +38,22 @@ block content
 
 
    - thumb = ""
-   - vid_url = ""
+   - vid_url = "/res/videos"
 
    if video.type == "tv-show"
-      - vid_url = "/tv-shows/"+ video.vidID +"/season_"+ video.season +"/"+ video.episodes.current.url
+      - vid_url += "/tv-shows/"+ video.vidID +"/season_"+ video.season +"/"+ video.episodes.current.url
       - thumb = video.episodes.current.thumb
    else if video.type == "movie"
       - thumb = video.thumb.small
-      - vid_url = video.vid_url
+      if(!video.vid_url)
+         - vid_url += video.vidurl
+      else
+         - vid_url += video.vid_url
+
 
    video(id="my-video", class="video-js", controls, preload="auto", width="640", height="450", poster="/res/thumb"+thumb, data-setup="{}",
    style="width: 100%;")
-      source(src="/res/videos"+vid_url, type="video/mp4")
+      source(src=vid_url, type="video/mp4")
       p(class='vjs-no-js')
          To view this video please enable JavaScript, and consider upgrading to a web browser that
          a(target="_blank", href="http://videojs.com/html5-video-support/") supports HTML5 video

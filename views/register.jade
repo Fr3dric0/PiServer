@@ -1,0 +1,17 @@
+//
+   Created by Acer on 14.04.2016.
+extends layout
+block styles
+   link(rel='stylesheet', href='/stylesheets/home.css')
+block header
+block content
+   h2(class='sub-title') Register
+   form(role="form", action="/register", method="post", style="max-width: 300px")
+      .form-group
+         input.form-control(type="text", name="username", placeholder="Enter Username")
+      .form-group
+         input.form-control(type="password", name="password", placeholder="Password")
+      button.btn.btn-default(type="submit") Submit
+      p &nbsp;
+      a(href="/")
+         button.btn.btn-primary(type="button") cancel

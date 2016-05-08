@@ -2,14 +2,12 @@
  * Created by Acer on 24.03.2016.
  */
 let express = require('express');
-let fs = require('fs');
+var fs = require('fs');
 var router = express.Router();
-var MongoClient = require('mongodb').MongoClient;
 var assert = require('assert');
-var ObjectID = require("mongodb").ObjectID;
 var request = require('request');
 
-var mongoUrl = "mongodb://localhost:27017/PiMediaServer";
+var _uri = "http://localhost:3000";
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -18,7 +16,7 @@ router.get('/', function(req, res, next) {
     let buffer;
 
     request({
-        uri: 'http://localhost:3000/api/v1/',
+        uri: _uri+'/api/v1/',
         method: "GET",
         headers: {
             "Content-Type": "application/json"
@@ -42,18 +40,11 @@ router.get('/', function(req, res, next) {
         res.render('videos', {
             title: "PiServer",
             movies: movies,
-            tv_shows: tv_show
+            tv_shows: tv_show,
+            user: req.user
         });
 
     });
-    /*
-     res.render('videos', {
-     title: 'PiServer',
-     movies: movies,
-     tv_shows: tv_shows
-     });*/
-
-
 
 });
 
@@ -69,7 +60,7 @@ router.get('/:vidId', (req, res, next) => {
 
     // GET data
     request({
-        uri:'http://localhost:3000/api/v1/'+vidId,
+        uri:_uri+'/api/v1/'+vidId,
         method: 'GET',
         headers:{
             "Content-Type": "application/json"
@@ -80,15 +71,17 @@ router.get('/:vidId', (req, res, next) => {
             return;
         }
 
-        let video = JSON.parse(body)[0];
+        let video = JSON.parse(body);
 
         let template:string;
 
         if(typeof video != "undefined"){
 
+            // Decide which template to use
             switch(video.type){
                 case 'movie':
                     template = 'videoplayer';
+                    incViewcount(vidId);
                     break;
                 case 'tv-show':
                     template = 'details';
@@ -97,7 +90,8 @@ router.get('/:vidId', (req, res, next) => {
 
             res.render(template, {
                 title: "PiServer",
-                video: video
+                video: validateThumbImages(video),
+                user: req.user
             })
         }else{
             res.send("<h1>Could not load media with id: "+vidId+"</h1>");
@@ -106,6 +100,35 @@ router.get('/:vidId', (req, res, next) => {
     });
 
 });
+
+
+
+
+/**
+ *
+ *  @desc: Iterates over the template images in the tv-show
+ * */
+function validateThumbImages(vid:Object){
+    let seasons= vid.seasons;
+
+    if(typeof seasons != "undefined") {
+        var i = 1;
+        seasons.forEach((s) => {
+            if(s != null) {
+                if (typeof s.thumb == "undefined") {
+
+                    let tempUrl = "/small/" + vid.vidID + "_thumb" + i + ".jpg";
+
+                    s.thumb = tempUrl; // @TODO:ffl validate tempurl truly is a valid filename or not
+                } else {
+                    // @TODO:ffl create a validator for if the thumb really exists or not
+                }
+            }
+            i++;
+        });
+    }
+    return vid;
+}
 
 
 /**
@@ -122,8 +145,6 @@ router.get('/:vidID/:season/:episode', (req, res, next) => {
     let season = req.params.season;
     let episode = req.params.episode;
 
-    let _uri = 'http://localhost:3000';
-
     request({
         uri:_uri+'/api/v1/'+vidID+"/"+season+"/"+episode,
         method: "GET",
@@ -136,6 +157,8 @@ router.get('/:vidID/:season/:episode', (req, res, next) => {
             return;
         }
 
+        incViewcount(vidID);
+
         let video = JSON.parse(body)[0]; // only take the first element.
 
         res.render("videoplayer",{
@@ -144,7 +167,8 @@ router.get('/:vidID/:season/:episode', (req, res, next) => {
             conf: {
                 season: season,
                 episode: episode
-            }
+            },
+            user: req.user
         });
 
 
@@ -152,6 +176,19 @@ router.get('/:vidID/:season/:episode', (req, res, next) => {
     });
 });
 
+
+function incViewcount(vidID){
+    request({uri:"http://localhost:4567/api/v1/"+vidID+"/addview",
+        method: "GET"
+    }, (err, response, body) => {
+        if(err){
+            console.err(err);
+            return;
+        }
+
+    //    console.log("Viewcount incremented on "+vidID);
+    });
+}
 
 
 module.exports = router;

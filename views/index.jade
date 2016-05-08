@@ -7,9 +7,10 @@ block header
 block content
   h2(class='sub-title') Avdelingar
 
-  ul(class='media-listing')
+
+  ul(class='media-listing', style="margin-left: 29%; overflow: hidden;")
     for media in pages
-        li(class='media-listing-li')
+        li(class='media-listing-li', style="height: 175px; width:175px;")
           a(href=media.url)
             img(class='preview-img blur', src='/images/'+media.tmb_name)
             h3(class='preview-title')=media.name

@@ -11,9 +11,22 @@ html
     div(class="container")
       div(class='header')
         div(class='title-container')
-            a(href="/")
-              h1(class='title')=title
-            block header
+          a(href="/")
+            h1(class='title')=title
+
+        div.user-container()
+          if(user)
+            a.btnauth.logout(href="/logout") Logout
+            a(href="/user/"+user.username)
+              strong(style="position:relative; float:right; color:#efefef")=user.username
+              .profileimg-container
+                img.profile-img(src="/res/images/profile-img/flindhagen.jpg", alt="profile-img")
+          if(!user)
+            a.btnauth.login(href="/login") Login
+            br
+            a.btnauth.register(href="/register") Register
+
+          block header
 
       div(class='content')
         block content

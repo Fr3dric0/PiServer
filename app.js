@@ -5,8 +5,11 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
+var mongoose = require('mongoose');
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
+
 var routes = require('./routes/index');
-var users = require('./routes/users');
 
 var app = express();
 
@@ -20,11 +23,44 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(require('express-session')({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', routes); // Use the angular views to render the page
-app.use('/videos', require('./routes/videos'));
-app.use('/api', require('./routes/api'));
+
+var User = require('./models/user.js'); // Get the User model
+passport.use(new LocalStrategy(User.authenticate()) );
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+mongoose.connect('mongodb://localhost:27017/PiMediaServer');
+
+
+app.use('/', routes); // Don't need to be authenticated
+app.use('/api', require('./routes/api')); // Custom authentication
+app.use(userValidation);
+app.use('/videos', require('./routes/videos')); // Needs authentication
+app.use('/user', require('./routes/user'));
+
+/**
+ * @desc: Handles user validation. on every before request
+ *
+ * */
+function userValidation(req, res, next){
+  if(req.user){
+    console.log("USER "+req.user.username+" FOUND\n");
+    return next();
+  }
+
+  console.log("COULD NOT FIND USER\n");
+  return next();
+  //return res.redirect("/");
+}
 
 
 // catch 404 and forward to error handler

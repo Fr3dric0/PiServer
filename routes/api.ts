@@ -8,7 +8,7 @@ var MongoClient = require('mongodb').MongoClient;
 var assert = require('assert');
 var ObjectID = require("mongodb").ObjectID;
 var request = require('request');
-var VideosModel = require('../src/VideosModel');
+var VideosConverter = require('../src/VideosConverter');
 
 var mongoUrl = "mongodb://localhost:27017/PiMediaServer";
 let apiVersions = ["v1"];
@@ -19,7 +19,7 @@ let errorJson = {
 var validVideoTypes = ["mp4"];
 
 let collectionName = "videos";
-
+var Videos = require('../models/video'); // Get the Videos model
 
 /*====  GET  ====*/
 router.get('/', function(req, res, next) {
@@ -32,31 +32,25 @@ router.get('/', function(req, res, next) {
 /** Unspecified url, return all
  * */
 router.get('/:version', validateAPIVer, (req, res, next) => {
-    let queryobject = {};
     let mediatype = req.query.type || null;
+    let queryobj = {};
 
-    if(mediatype){
-        queryobject.type = mediatype;
+    if(mediatype){ // If the user specifies a datatype, filter the search on this
+        queryobj = {type: mediatype};
     }
 
-    // Connect to the mongo-server
-    mongoConnect(mongoUrl, res, (err, db) =>{
-        // GET data from db collection 'videos'
-        db.collection(collectionName).find(queryobject, {_id: false}).toArray( (err, media) => {
-            if(err){
-                printError(
-                    {
-                        title: "Error",
-                        message: err,
-                        statusCode: 400
-                    }, res);
-                return;
-            }
-
-            res.json(media);
-            db.close();
-        });
+    // Find the video objects
+    Videos.find(queryobj, {_id:false}, (err, media) => {
+        if(err){
+            return printError({
+                title: "QUERY ERROR",
+                message: err,
+                statusCode: 400
+            }, res);
+        }
+        res.json(media);
     });
+
 });
 
 // Specified vidID
@@ -68,24 +62,20 @@ router.get('/:version/:vidID', validateAPIVer, (req, res, next) => {
         queryobject.type = mediaType;
     }
 
-    mongoConnect(mongoUrl, res, (err, db) =>{
+    Videos.findOne({vidID: req.params.vidID}, {_id:false},
+        (err, vid) => {
+            if(err){
+                return printError({
+                    title: "QUERY ERROR",
+                    message: err,
+                    statusCode: 400
+                }, res);
+            }
 
+            res.json(vid);
+        }
+    );
 
-        db.collection(collectionName).find(queryobject, {_id: false})
-            .toArray( (err, media) => {
-                if(err){
-                    printError({
-                        title: "ERROR",
-                        message: err,
-                        statusCode: 400
-                    }, res);
-                    return;
-                }
-
-                res.json(media);
-                db.close();
-            });
-    });
 });
 
 // Requests season of a show
@@ -112,31 +102,92 @@ router.get('/:version/:vidID/:season', validateAPIVer, (req, res, next) => {
         }
     }, (err, response, body) => {
         if(err){
-            printError({
+            return printError({
                 title: "ERROR",
                 message: err,
                 statusCode: 400
             }, res);
-            return;
+
         }
 
         let buffer = JSON.parse(body)[0];
 
         //ERRORHANDLING: season number is to high
         if(season > buffer.seasons.length){
-            printError({
+            return printError({
                 title: "INDEX OUT OF BOUNDS ERROR",
                 message: "The requested season is bigger than the season indexes available",
                 statusCode: 404
             }, res);
-            return;
         }
 
-        res.json(buffer.seasons[season-1]);
+        var vid = {
+            vidID: buffer.vidID,
+            title: buffer.title,
+            thumb: buffer.thumb,
+            type: buffer.type,
+            season: parseInt(season),
+            episodes: buffer.seasons[season-1],
+            rating: buffer.rating,
+            viewcount: buffer.viewcount,
+            details: buffer.details,
+            genre: buffer.genre,
+            uploaded: buffer.uploaded
+        };
+
+        res.json(vid);
     });
 });
+/*
+router.get('/api/v1/:vidID/:season/:episode', (req, res) => {
+    let vidID = req.params.vidID;
+    let season = parseInt(req.params.season);
+    let episode = parseInt(req.params.episode);
 
+    console.log("=== RUNNING ===");
 
+    request({
+        uri:'http://localhost:4567/api/v1/'+vidID+"/"+season+'/'+episode,
+        method: 'GET',
+        headers:{
+            'Content-Type': 'application/json'
+        }
+    },
+        (err, response, body) => {
+            if(err){
+                return printError({
+                    title: "ERROR",
+                    message: err,
+                    statusCode: 400
+                }, res);
+            }
+
+            switch(response.statusCode){
+                case 200:
+                    return res.json(JSON.parse(body)[0]);
+                    break;
+                case 201:
+                    return res.json(JSON.parse(body)[0]);
+                    break;
+                case 400:
+                    return printError({
+                        title: "CLIENT ERROR",
+                        message: "Could not load the data because an error on the client side",
+                        statusCode: 400
+                    }, res);
+                    break;
+                case 404:
+                    return printError({
+                        title: "DATA NOT FOUND",
+                        message: "Could not find the data you were looking for",
+                        statusCode: 404
+                    }, res);
+                    break;
+            }
+        }
+    );
+});
+*/
 /**
  *  @url-param: (string)    vidID   The identification for the video
  *              (int)       season  The selected season
@@ -173,6 +224,8 @@ router.get('/:version/:vidID/:season', validateAPIVer, (req, res, next) => {
  * */
 router.get('/:version/:vidID/:season/:episode', validateAPIVer, (req, res, next) =>{
     let version = req.params.version;
+
+
     let vidID = req.params.vidID;
     let season = parseInt(req.params.season);
     let episode = parseInt(req.params.episode);
@@ -210,7 +263,7 @@ router.get('/:version/:vidID/:season/:episode', validateAPIVer, (req, res, next)
         //TODO:ffl Create middleware validationhandling for season and episodes
 
         // Check if SEASON is larger than the seasons available
-        if(season > buffer[0].seasons.length){
+        if(season > buffer.seasons.length){
             printError({
                 title: "INDEX OUT OF BOUNDS ERROR",
                 message: "The requested season is bigger than the seasons available",
@@ -229,7 +282,7 @@ router.get('/:version/:vidID/:season/:episode', validateAPIVer, (req, res, next)
 
 
         // Check if REQUESTED episode is bigger than available episodes
-        if(episode > buffer[0].seasons[season-1].episodes.length){
+        if(episode > buffer.seasons[season-1].episodes.length){
             printError({
                 title: "INDEX OUT OF BOUNDS ERROR",
                 message: "The requested episode number is bigger than the episodes available!",
@@ -239,7 +292,7 @@ router.get('/:version/:vidID/:season/:episode', validateAPIVer, (req, res, next)
         }
 
         //                      Get first element from buffer
-        vids.push(transformVideoJson(buffer[0], {season: season, episode: episode}));
+        vids.push(transformVideoJson(buffer, {season: season, episode: episode}));
 
         if(vids[0] == null){
             return;
@@ -396,9 +449,10 @@ router.post('/:version', validateAPIVer, (req, res, next) => {
         return;
     }
 
-    var videosModel = new VideosModel(req.body);
 
-    videosModel.getData( (err, data) => {
+    var videosConverter = new VideosConverter(req.body);
+
+    videosConverter.getData( (err, data) => {
         res.json(data);
     });
 });
