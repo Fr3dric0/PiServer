@@ -144,7 +144,7 @@ router.get('/:vidID/:season/:episode', function (req, res, next) {
 });
 function incViewcount(vidID) {
     request({ uri: "http://localhost:4567/api/v1/" + vidID + "/addview",
-        method: "GET"
+        method: "PUT"
     }, function (err, response, body) {
         if (err) {
             console.err(err);
