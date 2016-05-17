@@ -1,5 +1,43 @@
 
 
+.adm-button-container{
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 40%;
+    margin-top: -1.5%;
+    margin-left: .4%;
+}
+
+.adm-button{
+    position: relative;
+    float: left;
+    margin-right: 2%;
+
+    padding: .2%;
+    padding-left: 2%;
+    padding-right: 2%;
+
+    background-color: #ccc;
+
+    border: #aaa solid 1px;
+}
+
+.adm-button-icon{
+    position: relative;
+    float: left;
+    margin: 0;
+    padding: 0;
+    padding-top: 3%;
+}
+
+.adm-button-label{
+    position: relative;
+    float: right;
+    margin: 0;
+    padding: 0;
+}
+
 .category-listing{
     position: relative;
     margin-top: 3%;
@@ -44,5 +82,19 @@
 
     color: #FFF;
     text-shadow: #555 0em 0em 0.4em;
+}
+
+.vid-remove-scheema-container{
+    background-color: #FFF;
+    position: absolute;
+    z-index: 80;
+    top: 2%;
+    left: 2%;
+
+    width: 200px;
+
+    box-shadow: #212121 0.1em 0.1em 0.3em;
+
+    display:none;
 }
 

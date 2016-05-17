@@ -1,9 +1,18 @@
 extends layout
 block styles
+    link(rel="stylesheet", href="/stylesheets/home.css")
 
 block header
 
 block content
+    div(class="adm-button-container")
+        button(id="admUploadVideo", class="adm-button")
+            i(class="adm-button-icon glyphicon glyphicon-upload")
+            p(class="adm-button-label") Last opp
+        button(id="admRemoveVideo", class="adm-button", style="background-color:#FF193D; border-color: #B2001C")
+            i(class="adm-button-icon glyphicon glyphicon-remove")
+            p(class="adm-button-label") Fjern video
+
     h2(class='sub-title') Filmar
 
     ul(class='media-listing')
@@ -74,4 +83,12 @@ block content
                                         style='font-size: 0.8em;')
                                     em &nbsp #{tv.viewcount}
 
+    div(class="vid-remove-scheema-container", style="display:block")
+        h4(style="text-align: center") Sletteskjema
+        form(id="removeVideoForm", style="margin-left: 5%; margin-right: 5%;")
+            p(id="rmFeedback", style="position: relative; width: 100%; padding: 3px; border-radius: 4px;")
+            em For å slette skriv inn <strong>tittelen</strong> til videoen du vil fjerne
+            input(id="video-title",type="text", name="title", placeholder="Tittel til video")
+            input(type="submit", value="Slett", style="padding: 1px; padding-left: 10px; padding-right: 10px; margin-bottom: 5px; margin-top: 5px;")
 block scripts
+    script(type="text/javascript", src="/js/videos.js")

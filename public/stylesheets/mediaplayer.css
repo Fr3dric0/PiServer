@@ -17,6 +17,15 @@ body{
     owerflow: hidden;
 }
 
+.title-anchor{
+    color: #efefef;
+    text-shadow: #212121 .1em .1em 0.3em;
+}
+
+.title-anchor:hover{
+    text-decoration: none;
+    color: #FFF;
+}
 .cover-img{
     -webkit-filter: blur(5px);
     -moz-filter: blur(5px);

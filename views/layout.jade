@@ -13,12 +13,13 @@ html
         div(class='title-container')
           a(href="/")
             h1(class='title')=title
+          block title-area
 
         div.user-container()
           if(user)
             a.btnauth.logout(href="/logout") Logout
             a(href="/user/"+user.username)
-              strong(style="position:relative; float:right; color:#efefef")=user.username
+              strong(style="position:relative; margin-top: 0;float:right; color:#efefef")=user.username
               .profileimg-container
                 img.profile-img(src="/res/images/profile-img/flindhagen.jpg", alt="profile-img")
           if(!user)

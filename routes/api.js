@@ -260,10 +260,11 @@ router.get('/:version/:vidID/:season/:episode', validateAPIVer, function (req, r
         }
         //                      Get first element from buffer
         vids.push(transformVideoJson(buffer, { season: season, episode: episode }));
+        // Check if the video is empty
         if (vids[0] == null) {
             return;
         }
-        res.json(vids);
+        res.json(vids[0]);
     });
 });
 /**

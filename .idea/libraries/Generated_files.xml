@@ -6,8 +6,8 @@
         <item url="file://$PROJECT_DIR$/routes/api.js" />
         <item url="file://$PROJECT_DIR$/models/video.js" />
         <item url="file://$PROJECT_DIR$/routes/videos.js" />
+        <item url="file://$PROJECT_DIR$/public/js/videos.js" />
         <item url="file://$PROJECT_DIR$/models/user.js" />
-        <item url="file://$PROJECT_DIR$/src/VideosModel.js" />
       </sourceFilesUrls>
     </properties>
     <CLASSES>
@@ -23,6 +23,7 @@
       <root url="file://$PROJECT_DIR$/routes/videos.js" />
       <root url="file://$PROJECT_DIR$/src/VideosConverter.js" />
       <root url="file://$PROJECT_DIR$/models/user.js" />
+      <root url="file://$PROJECT_DIR$/public/js/videos.js" />
     </CLASSES>
     <SOURCES />
   </library>
