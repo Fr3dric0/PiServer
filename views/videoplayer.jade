@@ -1,4 +1,5 @@
 extends layout
+
 block styles
    link(href="/videojs/video-js.css", rel="stylesheet")
    link(href="/stylesheets/details.css", rel="stylesheet")
@@ -7,9 +8,13 @@ block styles
 block header
 
 block title-area
-   a(class="video-anchor", href="/videos") video
+   strong(class="page-sepparator glyphicon glyphicon-menu-right")
+   a(class="video-anchor", href="/videos", style="margin-left:1%") video
 
 block content
+
+   - txtColor = "#BBB"
+
    div(class='cover-img-container')
       img(class="cover-img", src="/res/thumb/" + video.thumb.large)
 
@@ -31,37 +36,34 @@ block content
          td( class='stat-clm', id='stat-genre',
          style='font-size: 0.7em; word-wrap: break-word; width: 40%;')
             if typeof video.genre != "undefined"
-               strong=video.genre.join(", ")
+               strong(style="color:"+txtColor)=video.genre.join(", ")
          td( class='stat-clm', id='stat-rating',
-         style='text-align: center')
+         style='text-align: center;')
             img(src='/images/imdb_flat.png', class='stat-rating-ico')
-            em &nbsp #{video.rating}
+            em(style="color:"+txtColor) &nbsp #{video.rating}
          td( class='stat-clm',
          id='stat-viewcount',
          style='text-align: right; padding-left: 0; padding-right: 3%;')
             i(  class='glyphicon glyphicon-eye-open',
-            style='font-size: 0.8em;')
-            em &nbsp #{video.viewcount}
-   p(class='details')=video.details
+            style='font-size: 0.8em; color:'+txtColor)
+            em(style="color:"+txtColor) &nbsp #{video.viewcount}
+   p(class='details', style="font-family: georgia; color:"+txtColor)=video.details
 
 
 
    - thumb = ""
-   - vid_url = "/res/videos"
+   - vid_url = ""
 
    if video.type == "tv-show"
-      - vid_url += "/tv-shows/"+ video.vidID +"/season_"+ video.season +"/"+ video.episodes.current.url
+      - vid_url += "/tv-show/"+ video.vidID +"/season_"+ video.season +"/"+ video.episodes.current.url
       - thumb = video.episodes.current.thumb
    else if video.type == "movie"
       - thumb = video.thumb.small
-      if(!video.vid_url)
-         - vid_url += video.vidurl
-      else
-         - vid_url += video.vid_url
+      - vid_url += video.url
 
 
    video(id="my-video", class="video-js", controls, preload="auto", width="640", height="450", poster="/res/thumb"+thumb, data-setup="{}",
-   style="width: 100%;")
+   style="width: 100%; color: #f8f8f8; font-size: 0.9em;")
       source(src=vid_url, type="video/mp4")
       p(class='vjs-no-js')
          To view this video please enable JavaScript, and consider upgrading to a web browser that
@@ -76,7 +78,7 @@ block content
                   img(src="/res/thumb"+thumb, style="height: 150px;")
          if typeof video.episodes.next != "undefined"
             div(class="preview-container gradient-bg-left", style="float: right; padding-left: 25px;")
-               a(href="/videos/"+video.vidID+"/"+video.episodes.next.season+"/"+video.episodes.next.episode)
+               a(href="/videos/" + video.vidID + "/" + video.episodes.next.season + "/" + video.episodes.next.episode)
                   img(src="/res/thumb"+thumb, style="height: 150px;")
                   h3(style="float: left; margin-top: 40%;padding-right: 4%;") Neste
 

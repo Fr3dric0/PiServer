@@ -2,12 +2,18 @@
   <library name="Generated files" type="javaScript">
     <properties>
       <sourceFilesUrls>
-        <item url="file://$PROJECT_DIR$/routes/user.js" />
+        <item url="file://$PROJECT_DIR$/src/VideoFileHandler.js" />
+        <item url="file://$PROJECT_DIR$/public/js/FeedbackHandler.js" />
         <item url="file://$PROJECT_DIR$/routes/api.js" />
-        <item url="file://$PROJECT_DIR$/models/video.js" />
+        <item url="file://$PROJECT_DIR$/routes/user.js" />
+        <item url="file://$PROJECT_DIR$/models/tvshow.js" />
         <item url="file://$PROJECT_DIR$/routes/videos.js" />
-        <item url="file://$PROJECT_DIR$/public/js/videos.js" />
+        <item url="file://$PROJECT_DIR$/routes/modify.js" />
+        <item url="file://$PROJECT_DIR$/models/movie.js" />
         <item url="file://$PROJECT_DIR$/models/user.js" />
+        <item url="file://$PROJECT_DIR$/models/views.js" />
+        <item url="file://$PROJECT_DIR$/public/js/videos.js" />
+        <item url="file://$PROJECT_DIR$/public/js/uploadvideo.js" />
       </sourceFilesUrls>
     </properties>
     <CLASSES>
@@ -17,13 +23,21 @@
       <root url="file://$PROJECT_DIR$/public/js/controllers/videos.js" />
       <root url="file://$PROJECT_DIR$/public/js/app.js" />
       <root url="file://$PROJECT_DIR$/public/js/controllers/main.js" />
-      <root url="file://$PROJECT_DIR$/routes/api.js" />
-      <root url="file://$PROJECT_DIR$/routes/user.js" />
       <root url="file://$PROJECT_DIR$/models/video.js" />
-      <root url="file://$PROJECT_DIR$/routes/videos.js" />
+      <root url="file://$PROJECT_DIR$/models/video.js" />
       <root url="file://$PROJECT_DIR$/src/VideosConverter.js" />
+      <root url="file://$PROJECT_DIR$/src/VideoFileHandler.js" />
+      <root url="file://$PROJECT_DIR$/routes/videos.js" />
+      <root url="file://$PROJECT_DIR$/models/movie.js" />
+      <root url="file://$PROJECT_DIR$/models/views.js" />
       <root url="file://$PROJECT_DIR$/models/user.js" />
+      <root url="file://$PROJECT_DIR$/public/js/FeedbackHandler.js" />
+      <root url="file://$PROJECT_DIR$/routes/user.js" />
+      <root url="file://$PROJECT_DIR$/routes/api.js" />
+      <root url="file://$PROJECT_DIR$/models/tvshow.js" />
+      <root url="file://$PROJECT_DIR$/routes/modify.js" />
       <root url="file://$PROJECT_DIR$/public/js/videos.js" />
+      <root url="file://$PROJECT_DIR$/public/js/uploadvideo.js" />
     </CLASSES>
     <SOURCES />
   </library>

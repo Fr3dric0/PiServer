@@ -13,7 +13,8 @@ body{
 }
 
 .cover-img-container{
-    height: 175px;
+    top: -15px;
+    height: 185px;
     owerflow: hidden;
 }
 
@@ -45,14 +46,33 @@ p.details{
     color: #aaa;
     font-size: 0.9em;
 }
+
 .stat-clm{
-    color: #ccc;
+    color: #BBB;
     font-size: 0.8em;
 }
 
-
 .video-js{
     position: relative;
+}
+
+.vjs-control{
+    color: #CCC;
+}
+
+.vjs-play-control::before{
+    color: #CCC;
+}
+
+.vjs-time-control{
+    color: #ccc;
+}
+
+.vjs-remaining-time-display{
+    color: #CCC;
+}
+.vjs-fullscreen-control::before{
+    color: #CCC;
 }
 
 .preview-container{

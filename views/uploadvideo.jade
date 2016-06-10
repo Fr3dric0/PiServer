@@ -1,0 +1,50 @@
+extends layout
+block styles
+   link(rel="stylesheet", href="/stylesheets/upload.css")
+block header
+
+block title-area
+   strong(class="page-sepparator glyphicon glyphicon-menu-right")
+   a(class="video-anchor", href="/videos", style="margin-left:1%") video
+block content
+
+   h2(class="sub-title") Legg til video
+
+   p(id="feedback", class="feedback") Test Test Test Test
+
+   form(class="uploadform", method="POST")
+      label(for="title") Tittel
+      input(id="inputTitle", type="text", name="title", placeholder="Tittelen til film-/tv-serien")
+      br
+      label(for="type") Videotype
+      select(id="inputType", name="type")
+         option(value="movie") Film
+         option(value="tv-show") TV-serie
+      br
+      label(id="lblEpisodes", for="episodes", style="display:none") Episodar
+      input(id="inputEpisodes", type="text", name="episodes", placeholder="Sepparer episodar per sesong med komma", style="display:none", disabled)
+      br
+      label(for="thumbnails") Thumbnails
+      fieldset(name="thumbnails")
+         input(id="inputThumbSmall",type="checkbox", name="thumbsmall", value="small")
+         | Liten
+         input(id="inputThumbLarge",type="checkbox", name="thumblarge", value="large")
+         | Stor
+      br
+      label(for="details") Detaljar
+      textarea(id="inputDetails", name="details", placeholder="Oppsummering over kva video handlar om")
+      br
+      label(for="rating")
+         a(href="http://www.imdb.com/", target="_blank")
+            img(src="/images/imdb_flat.png", style="width: 35px")
+         strong &nbsp Rating
+      input(id="inputRating", name="rating", type="number", min="0.0", max="10.0")
+      br
+      label(for="genre") Sjanger
+      select(id="inputGenre", name="genre", multiple)
+      br
+      input(id="save", type="submit", name="lagre", value="Lagre", style="padding: 2px; padding-left: 15px; padding-right: 15px; margin-bottom: 10px;")
+
+block scripts
+   script(type="text/javascript", src="/js/FeedbackHandler.js")
+   script(type="text/javascript", src="/js/uploadvideo.js")

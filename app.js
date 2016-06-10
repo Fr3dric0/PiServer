@@ -8,8 +8,8 @@ var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
-
 var routes = require('./routes/index');
+var config = require('./bin/config/config.json');
 
 var app = express();
 
@@ -30,6 +30,7 @@ app.use(require('express-session')({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 
@@ -41,11 +42,24 @@ passport.deserializeUser(User.deserializeUser());
 mongoose.connect('mongodb://localhost:27017/PiMediaServer');
 
 
+
+// Define routers
+app.use(addConfigToSession);
 app.use('/', routes); // Don't need to be authenticated
-app.use('/api', require('./routes/api')); // Custom authentication
+app.use('/api/v1', require('./routes/api')); // Custom authentication
 app.use(userValidation);
 app.use('/videos', require('./routes/videos')); // Needs authentication
 app.use('/user', require('./routes/user'));
+app.use('/modify', require('./routes/modify'));
+
+
+/* === Middleware === */
+
+function addConfigToSession(req, res, next){
+  req.config = config;
+  next();
+}
+
 
 /**
  * @desc: Handles user validation. on every before request

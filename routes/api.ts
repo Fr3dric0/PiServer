@@ -8,611 +8,507 @@ var MongoClient = require('mongodb').MongoClient;
 var assert = require('assert');
 var ObjectID = require("mongodb").ObjectID;
 var request = require('request');
-var VideosConverter = require('../src/VideosConverter');
+var Movie = require('../models/movie');
+var TVShow = require('../models/tvshow');
 
-var mongoUrl = "mongodb://localhost:27017/PiMediaServer";
-let apiVersions = ["v1"];
-let errorJson = {
-    title:"Error",
-    message: ""
-};
+
 var validVideoTypes = ["mp4"];
-
 let collectionName = "videos";
-var Videos = require('../models/video'); // Get the Videos model
+
 
 /*====  GET  ====*/
 router.get('/', function(req, res, next) {
     res.json({
         title:"PiServer data collection API",
-        text: "specify version 'v1' and video ID 'the_martian' to get data from the server"
+        message: "specify version 'v1' and video ID 'the_martian' to get data from the server"
     });
 });
 
-/** Unspecified url, return all
- * */
-router.get('/:version', validateAPIVer, (req, res, next) => {
-    let mediatype = req.query.type || null;
-    let queryobj = {};
 
-    if(mediatype){ // If the user specifies a datatype, filter the search on this
-        queryobj = {type: mediatype};
-    }
+router.get('/:vidID', (req, res) => {
+    var vidID = req.params.vidID;
+    var response = {};
 
-    // Find the video objects
-    Videos.find(queryobj, {_id:false}, (err, media) => {
-        if(err){
-            return printError({
-                title: "QUERY ERROR",
-                message: err,
-                statusCode: 400
-            }, res);
-        }
-        res.json(media);
-    });
+    console.log("=== GETTING ELEMENT ===");
 
-});
+    TVShow.find({vidID: vidID}, (err, tvshow) => {
+        console.log("TVSHOW");
+        console.log(tvshow);
 
-// Specified vidID
-router.get('/:version/:vidID', validateAPIVer, (req, res, next) => {
-    let queryobject = {vidID: req.params.vidID}; // Query properties, used to specify what to get from DB
-    let mediaType = req.query.type || null; // ?type=xxxxx specify which mediatype the data is
+        if(tvshow.length > 0){
+            response = tvshow[0];
+            res.json(response);
 
-    if(mediaType != null){
-        queryobject.type = mediaType;
-    }
+        }else{
+            Movie.find({vidID: vidID}, (err1, movie) => {
+                console.log("MOVIE");
+                console.log(movie);
 
-    Videos.findOne({vidID: req.params.vidID}, {_id:false},
-        (err, vid) => {
-            if(err){
-                return printError({
-                    title: "QUERY ERROR",
-                    message: err,
-                    statusCode: 400
-                }, res);
-            }
+                if(movie.length > 0){
+                    response = movie[0];
+                    res.json(response);
 
-            res.json(vid);
-        }
-    );
-
-});
-
-// Requests season of a show
-router.get('/:version/:vidID/:season', validateAPIVer, (req, res, next) => {
-    let version = req.params.version;
-    let season:int = req.params.season;
-    let vidID:string = req.params.vidID;
-
-    // ERRORHANDLING: to low season index
-    if(season < 1){
-        printError({
-            title: "INDEX OUT OF BOUND ERROR",
-            message: "The requested season cannot be 0 or lower!",
-            statusCode: 404
-        }, res);
-        return;
-    }
-
-    request({
-        uri: 'http://localhost:3000/api/'+version+'/'+vidID,
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    }, (err, response, body) => {
-        if(err){
-            return printError({
-                title: "ERROR",
-                message: err,
-                statusCode: 400
-            }, res);
-
-        }
-
-        let buffer = JSON.parse(body)[0];
-
-        //ERRORHANDLING: season number is to high
-        if(season > buffer.seasons.length){
-            return printError({
-                title: "INDEX OUT OF BOUNDS ERROR",
-                message: "The requested season is bigger than the season indexes available",
-                statusCode: 404
-            }, res);
-        }
-
-        var vid = {
-            vidID: buffer.vidID,
-            title: buffer.title,
-            thumb: buffer.thumb,
-            type: buffer.type,
-            season: parseInt(season),
-            episodes: buffer.seasons[season-1],
-            rating: buffer.rating,
-            viewcount: buffer.viewcount,
-            details: buffer.details,
-            genre: buffer.genre,
-            uploaded: buffer.uploaded
-        };
-
-        res.json(vid);
-    });
-});
-/*
-router.get('/api/v1/:vidID/:season/:episode', (req, res) => {
-    let vidID = req.params.vidID;
-    let season = parseInt(req.params.season);
-    let episode = parseInt(req.params.episode);
-
-    console.log("=== RUNNING ===");
-
-    request({
-        uri:'http://localhost:4567/api/v1/'+vidID+"/"+season+'/'+episode,
-        method: 'GET',
-        headers:{
-            'Content-Type': 'application/json'
-        }
-    },
-        (err, response, body) => {
-            if(err){
-                return printError({
-                    title: "ERROR",
-                    message: err,
-                    statusCode: 400
-                }, res);
-            }
-
-            switch(response.statusCode){
-                case 200:
-                    return res.json(JSON.parse(body)[0]);
-                    break;
-                case 201:
-                    return res.json(JSON.parse(body)[0]);
-                    break;
-                case 400:
+                }else{
                     return printError({
-                        title: "CLIENT ERROR",
-                        message: "Could not load the data because an error on the client side",
-                        statusCode: 400
-                    }, res);
-                    break;
-                case 404:
-                    return printError({
-                        title: "DATA NOT FOUND",
-                        message: "Could not find the data you were looking for",
+                        title: "VIDEO NOT FOUND",
+                        message: "Could not find video with a vidID of "+vidID,
                         statusCode: 404
                     }, res);
-                    break;
-            }
+                }
+
+            });
         }
-    );
-});
-*/
-/**
- *  @url-param: (string)    vidID   The identification for the video
- *              (int)       season  The selected season
- *              (int)       episode Requested episode
- *  @desc:  The user request data with specific focus on 'this' episode.
- *          Router should gather the data, remove all other episodes, except the current, previous and the next.
- *
- *          Everything will be parsed to an object-element in the 'vids'-array
- *
- *  @return: (Array) With single object with mentioned data
- *
- *  EXAMPLE:
- *      URL: /api/v1/silicon_valley/1/2
- *      RETURNS:
- *              {
- *                  vidID: 'silicon_valley',
- *                  title: 'Silicon Valley',
- *                  thumb: {
- *                      small: "/small/silicon_valley_thumb.jpg",
- *                      large: "/large/silicon_valley_thumb.jpg"
- *                  },
- *                  type: "tv-show",
- *                  season: 1
- *                  episodes: {
- *                      current: "silicon_valley_s01e02.mp4",
- *                      next: "silicon_valley_s01e03.mp4",
- *                      previous: "silicon_valley_s01e01.mp4"
- *                  },
- *                  rating: 8.5,
- *                  viewcount: 83,
- *                  details: ......................
- *              }
- *
- * */
-router.get('/:version/:vidID/:season/:episode', validateAPIVer, (req, res, next) =>{
-    let version = req.params.version;
-
-
-    let vidID = req.params.vidID;
-    let season = parseInt(req.params.season);
-    let episode = parseInt(req.params.episode);
-
-    let vids = [];
-
-    if(episode < 1){
-        printError({
-            title: "INDEX OUT OF BOUNDS ERROR",
-            message: "The episode number cannot be 0 or lower!",
-            statusCode: 404
-        }, res);
-        return;
-    }
-
-    // GET DATA
-    request({
-        uri: 'http://localhost:3000/api/'+version+'/'+vidID+"?type=tv-show",
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    }, (err, response, body) => {
-        if(err){
-            printError({
-                title: "ERROR",
-                message: err,
-                statusCode: 400
-            }, response);
-            return;
-        }
-
-        let buffer = JSON.parse(body);
-
-        //TODO:ffl Create middleware validationhandling for season and episodes
-
-        // Check if SEASON is larger than the seasons available
-        if(season > buffer.seasons.length){
-            printError({
-                title: "INDEX OUT OF BOUNDS ERROR",
-                message: "The requested season is bigger than the seasons available",
-                statusCode: 400
-            }, res);
-            return;
-        // Check if SEASON is smaller than 1, ergo. the index for the season would then be < 0
-        }else if(season < 1){
-            printError({
-                title: "INDEX OUT OF BOUNDS ERROR",
-                message: "The requested season cannot be lower than 0",
-                statusCode: 400
-            }, res);
-            return;
-        }
-
-
-        // Check if REQUESTED episode is bigger than available episodes
-        if(episode > buffer.seasons[season-1].episodes.length){
-            printError({
-                title: "INDEX OUT OF BOUNDS ERROR",
-                message: "The requested episode number is bigger than the episodes available!",
-                statusCode: 400
-            }, res);
-            return;
-        }
-
-        //                      Get first element from buffer
-        vids.push(transformVideoJson(buffer, {season: season, episode: episode}));
-
-        // Check if the video is empty
-        if(vids[0] == null){
-            return;
-        }
-
-        res.json(vids[0]);
     });
 
 });
 
-/**
- *  @param: (Object)    data    The data recieved from the request
- *          (Object)    conf    Includes config data, like requested:
- *                                  - episode
- *                                  - season
- *  @desc:
- *      1. Checks if data includes 'vidID', this is an obligatory datastring.
- *      2. GET and CHECK if current season exists.
- *      3. Start to set data which don't need extra modification and parsing.
- *      4. Checks if the next and previous episodes is in the scope of the shows season and episodes.
- *      5. Put all data inside local variable 'd'
- *
- *  @return (Object) d
- * */
-function transformVideoJson(data, conf){
-    if(!data.vidID){
-        console.log("INVALID DATA ERROR");
-        console.log("\tCould not find vidID in program, every show MUST have a vidID for identification!");
-        return null;
-    }
 
-    // Store the current season
-    let currSeason = data.seasons[conf.season-1];
+router.get('/:vidID/:season', (req, res) => {
+    var vidID = req.params.vidID;
+    var season = req.params.season;
 
-    // CHECK if current season exists
-    if(!currSeason){
-        return null;
-    }
+    TVShow.find({vidID: vidID}, (err, show) => {
+        if(err){
+            return printError({
+                title: "MEDIA LOADING ERROR",
+                message: "Could not get TV-show from database",
+                statusCode: 500
+            }, res);
+        }
 
-    // Check if current episode is bigger or smaller than the episodes available
-    if( (conf.episode-1 > currSeason.episodes.length) || (conf.episode-1 < 0) ){
-        return null;
-    }
 
-    // Start to collect data, which don't need parsing and modification
-    let d = {
-        vidID: data.vidID,
-        title: data.title,
-        thumb: data.thumb,
-        type: data.type,
-        season: parseInt(conf.season),
-        episodes: {
-            current: {
-                thumb: currSeason.thumb,
-                url: currSeason.episodes[conf.episode-1]
+        createPrintableSeason(show[0], {season:season}, (err, printable) => {
+            if(err){
+                return printError(err, res);
             }
-        },
-        rating: data.rating,
-        viewcount: data.viewcount,
-        details: data.details,
-        genre: data.genre
+
+            res.json(printable);
+            return;
+        });
+
+    });
+
+});
+
+
+router.get('/:vidID/:season/:episode', (req, res) => {
+    var vidID = req.params.vidID;
+    var season = req.params.season;
+    var episode = req.params.episode;
+
+    TVShow.find({vidID:vidID}, (err, show) => {
+        if(err){
+            return printError({
+                title: "MEDIA LOADING ERROR",
+                message: "Could not get tv-show from the database",
+                statusCode: 500
+            }, res);
+        }
+
+
+        createPrintableEpisode(show[0], {
+            season:season,
+            episode:episode
+        }, (err1, printable) => {
+            if(err1){
+                return printError(err1, res);
+            }
+
+            res.json(printable);
+            return;
+        });
+
+    });
+
+});
+
+
+router.post('/', (req, res) => {
+    var vidID = req.params.vidID;
+    var type = req.body.type;
+
+    var media;
+
+    convertToMedia(req.body, (err, data) => {
+        if(err){
+            return printError(err, res);
+        }
+
+        checkIfMediaAlreadyExists(data, (err, exists) => {
+            if(err){
+                return printError({
+                    title: "DATA COLLECTION ERROR",
+                    messsage: "Could not properly connect to the Database",
+                    statusCode: 500
+                }, res);
+            }
+
+            if(exists){
+
+                return printError({
+                    title: "MEDIA ALREADY EXISTS",
+                    message: "The media already exists. Check for duplicates, or choose a different title",
+                    statusCode: 400
+                }, res);
+
+            }else{
+                media = data;
+
+                if(type == "movie"){
+                    var mov = Movie(media);
+                    // SAVE TO DATABASE
+                    mov.save( (saveErr) => {
+                        if(saveErr){
+                            return printError({
+                                title: "DATA UPLOAD ERROR",
+                                message: "Could not upload "+media.title+" to database",
+                                statusCode: 500
+                            }, res);
+                        }
+
+                        res.status = 200;
+                        res.json(media);
+                    })
+
+                }else if(type == "tv-show"){
+                    var show = TVShow(media);
+                    // SAVE TO DATABASE
+                    show.save( (saveErr) => {
+                        if(saveErr){
+                            return printError({
+                                title: "DATA UPLOAD ERROR",
+                                message: "Could not upload "+ media.title+" to database",
+                                statusCode: 500
+                            }, res);
+                        }
+
+                        res.status = 200;
+                        res.json(media);
+                    });
+                }
+            }
+        });
+
+
+    });
+
+});
+
+
+
+
+function createPrintableEpisode(media, conf, callback){
+    let epSize = 0;
+
+    try{
+        validateEpisodeNumber(media, conf);
+    }catch(e){
+        return callback(JSON.parse(e), null);
+    }
+
+    epSize = media.seasons[conf.season-1].episodes.length;
+
+    var _r = {
+        vidID : media.vidID,
+        title: media.title,
+        thumb: media.thumb,
+        type: typeof media.type != "undefined" ? media.type : "tv-show",
+        rating: media.rating,
+        details: media.details,
+        genre: media.genre,
+        viewcount: media.viewcount,
+        uploaded: typeof media.uploaded != "undefined" ? media.uploaded : new Date(),
+        season: parseInt(conf.season),
+        episodes: {}
     };
 
-    // CHECKS if the episode was the last in the season
-    if(conf.episode > currSeason.episodes.length-1){
+    var thisSeason = media.seasons[conf.season-1];
 
-        // CHECKS if there is another season
-        if(data.seasons.length-1 > conf.season){
-            d.episodes.next = {
-                thumb: data.seasons[conf.season].thumb,
-                url: data.seasons[conf.season].episodes[0], // Get the first episode of next season
-                season: conf.season+1,
-                episode: 1 // First episode
-            };
-        }
+    _r.episodes.current = {
+        episode: parseInt(conf.episode),
+        url: thisSeason.episodes[conf.episode-1],
+        thumb: thisSeason.thumb
+    };
 
-        // CHECKS if current episode was the first episode in the season
-        if(conf.episode < 1){
-
-            // CHECKS if current season wasn't the first season
-            if(conf.season > 1){
-                let prevSeason = data.seasons[conf.season-2];
-
-                d.episodes.prev = {
-                    thumb: prevSeason.thumb,
-                    url: prevSeason.episodes[prevSeason.episodes.length-1], // Get the last episode in the season
-                    season: conf.season-1,
-                    episode: prevSeason.episodes.length-1
-                };
-            }
-        }
-
-    }
-
-    // CHECKS if current episode is not the first
-    if(conf.episode > 1) {
-        d.episodes.prev = {
-            thumb: currSeason.thumb,
-            url: currSeason.episodes[conf.episode - 2],
-            season: conf.season,
-            episode: conf.episode-1
+    // Try to get the previous episode
+    if(conf.episode > 1){
+        _r.episodes.prev = {
+            episode: parseInt(conf.episode)-1,
+            url: thisSeason.episodes[conf.episode-2],
+            thumb: thisSeason.thumb
         };
     }
-    // Combined checks if episode isn't the last episode of the season
-    if(conf.episode < currSeason.episodes.length){
-        d.episodes.next = {
-            thumb: currSeason.thumb,
-            url: currSeason.episodes[conf.episode],
-            season: conf.season,
-            episode: conf.episode+1
-        };
+
+    // Try to get the next episode
+    if(conf.episode < epSize){
+        _r.episodes.next = {
+            episode: parseInt(conf.episode)+1,
+            url: thisSeason.episodes[conf.episode],
+            thumb: thisSeason.thumb
+        }
+    }
+
+    return callback(null, _r);
+}
+function validateEpisodeNumber(media, conf){
+    let epSize = 0;
+    let seasonSize = 0;
+
+    if(typeof conf.season == "undefined"){
+        throw JSON.stringify({title:"MISSING SEASON NUMBER", message: "Missing the value conf.season", statusCode: 400});
+    }
+    if(typeof conf.episode == "undefined"){
+        throw JSON.stringify({title: "MISSING EPISODE NUMBER", message: "Missing the value conf.episode", statusCode: 400});
+    }
+
+    // CHECK SEASON NUMBERS
+    seasonSize = media.seasons.length;
+    if(conf.season < 1){
+        throw JSON.stringify({title: "INVALID SEASON NUMBER", message: "The season number cannot be less than 1!", statusCode: 400});
+    }
+    if(conf.season > seasonSize){
+        throw JSON.stringify({title: "INVALID SEASON NUMBER", message: "The season number cannot bigger than the seasons available!", statusCode: 400});
+    }
+
+    // CHECK EPISODE NUMBERS
+    epSize = media.seasons[conf.season-1].episodes.length;
+    if(conf.episode < 1){
+        throw JSON.stringify({title: "INVALID EPISODE NUMBER", message: "The episode number cannot be less than 1!", statusCode: 400});
+    }
+    if(conf.episode > epSize){
+        throw JSON.stringify({title: "INVALID EPISODE NUMBER",
+            message: "The episode number is bigger than the number of episodes avilable in this season", statusCode: 400});
+    }
+
+
+}
+
+/**
+ *  @param: (Object)    Media   The specific show collected from the Database
+ *          (Object)    conf    Configuration values. Obligated value: 'season'
+ *          (Function)  callback    The callback function
+ *  @desc:  Puts the data we are interested in, into the _r variable.
+ *          Then checks if conf.season exists and is a valid number.
+ *          Last, add the values season and episodes
+ *
+ *  @return (Object) The whole season in print-friendly format
+ * */
+function createPrintableSeason(media, conf, callback){
+    var errorMsg = {title: "MEDIA PARSING ERROR", message:"", statusCode: 500};
+
+    var _r = {
+        vidID: media.vidID,
+        title: media.title,
+        thumb: media.thumb,
+        type: media.type,
+        rating: media.rating,
+        details: media.details,
+        genre: media.genre,
+        viewcount: media.viewcount,
+        uploaded: typeof media.uploaded != "undefined" ? media.uploaded : new Date()
+    };
+
+    if(typeof conf.season == "undefined"){
+        errorMsg.message = "conf.season is missing!";
+        return callback(errorMsg, null);
+    }
+    if(conf.season < 1){
+        return callback({title:"INVALID SEASON NUMBER", message: "The season number cannot be less than 1!", statusCode: 400}, null);
+    }
+
+    _r.season  = conf.season;
+
+    _r.episodes = media.seasons[conf.season-1];
+
+    return callback(null, _r);
+
+}
+/**
+ *  @desc:  Checks the collections 'movie' and 'tvshow' for an identical video
+ * */
+function checkIfMediaAlreadyExists(media, callback){
+    TVShow.find({vidID: media.vidID}, (err, data) => {
+        if(err){
+            return callback(err, null);
+        }
+        if(data.length > 0 || Object.keys(data).length > 0){
+            return callback(null, true);
+        }else{
+
+            Movie.find({vidID: media.vidID}, (err1, data1) => {
+                if(err1){
+                    return callback(err1, null);
+                }
+
+                if(data1.length > 0 || Object.keys(data).length > 0){
+                    return callback(null, true);
+
+                }else{ // Confirmed, The media does not exist
+                    return callback(null, false);
+                }
+            });
+        }
+
+
+    });
+}
+function convertToMedia(body, callback){
+    var media = {};
+
+    // The title must be included
+    if(!body.title){
+        return callback({
+            title: "MISSING PROPERTY ERROR",
+            message: "Missing title in the POST arguments",
+            statusCode: 400
+        }, null);
+    }
+    media.vidID = createVidID(body.title);
+
+    if(!body.type){
+        return callback({
+            title: "MISSING PROPERTY ERROR",
+            message:"Missing property 'type' in POST argument",
+            statusCode:400},
+        null);
+    }
+
+    media.type = body.type;
+    media.thumb = createThumbObj(body, media.vidID);
+    media.genre = body.genre.trim().split(",");
+    media.details = body.details;
+
+    if(body.rating > 10){
+        media.rating = 10;
+    }else if(body.rating < 0){
+        media.rating = 0;
+    }
+
+    // Get the "type-exclusive" values
+    if(media.type == "tv-show"){
+        media.seasons = setSeason(body, media.vidID);
+    }else if(media.type == "movie"){
+        media.url = createVidUrl(media.vidID, media.type, {});
+    }
+
+
+    return callback(null, media);
+}
+function setSeason(body, vidID){
+    var seasons = body.seasons.trim().split(",");
+    var _s = [];
+
+    seasons.forEach((val, key) => {
+        var epNum = parseInt(val);
+        var buffer = {};
+
+        buffer.thumb = createThumbURL(vidID, "small", ".j");
+        buffer.thumb = buffer.thumb.substring(0, buffer.thumb.length - ".j".length) + (key+1)+ ".jpg";
+
+        buffer.episodes = [];
+        for(var i = 0; i < val; i++){
+            buffer.episodes.push(createVidUrl(vidID, "tv-show", {season: key+1, episode: i+1}));
+        }
+
+        _s.push(buffer);
+    });
+
+    return _s;
+}
+function createVidUrl(vidID, type, options){
+    var url = "/res/videos/"+type+"/";
+
+    url += vidID + "/";
+
+    if(options && Object.keys(options).length > 0 ){
+        if(!options.season){
+            throw JSON.stringify({title: "MISSING PROPERTY", message: "Property 'season' is missing in options.", statusCode: 400});
+        }
+        if(!options.episode){
+            throw JSON.stringify({title: "MISSING PROPERTY", message:"Property 'episode' is missing in options", statusCode: 400})
+        }
+
+        url += "season_"+options.season;
+        url += "/"+vidID;
+
+        url += "_s"+getPrintableNumber(options.season);
+        url += "e"+ getPrintableNumber(options.episode);
+        url += ".mp4";
 
     }else{
-        // Checks if there are more seasons available
-        if(conf.season < data.seasons.length-1) {
-            d.episodes.next = {
-                thumb: data.seasons[conf.season].thumb,
-                url: data.seasons[conf.season].episodes[0], // Get the first episode of next season
-                season: conf.season-1,
-                episode: 1 // First episode
-            };
-        }
-    }
-
-    return d;
-}
-
-
-
-/*====  POST  ====*/
-
-router.post('/:version', validateAPIVer, (req, res, next) => {
-    let title = req.body.title || null;
-    let mediatype = req.body.type;
-
-    // Check if title exists
-    if(!title){
-        printError({
-            title: "POST ERROR",
-            message: "Missing title!",
-            statusCode: 400
-        }, res);
-        return;
-    }
-
-    // Check if mediatype exists
-    // Uses mediatype to identify if the data is for a movie or tv-show
-    if(!mediatype){
-        printError({
-            title: "POST ERROR",
-            message: "Missing key 'type'!",
-            statusCode: 400
-        }, res);
-        return;
+        url += vidID + ".mp4";
     }
 
 
-    var videosConverter = new VideosConverter(req.body);
+    /**
+     *  @desc:  A number should always print out double digits (03 or 24) or more, even though the number is less than 10.
+     *          This function creates this printable version of the number.
+     * */
+    function getPrintableNumber(num){
+        var printNum = "";
 
-    videosConverter.getData( (err, data) => {
-        res.json(data);
-    });
-});
-
-
-/**
- *  @params:    (string)    id          Videoid
- *              (array)     seasons     Array where each elementvalue is the episode numbers,
- *                                      and indexnumber+1 is the seasons
- *              (string)    filetype    The filetype for the files
- *
- *  @desc:      Iterates over each season.
- *                  1.  Sets the thumbimg value
- *                  2.  Iterates over each episode in each season and sets the filename
- *
- *  @return:    (array)     List with each season, and the episodes and thumbimg to follow
- * */
-function setSeasons(id, seasons, filetype){
-    let _r = [];
-
-    seasons.forEach( (epCount, idx) => {
-        let season = idx+1;
-        let _thumb = "/small/"+id+"_thumb"+season+".jpg";
-        let episodes = [];
-        let title = "";
-
-        epCount = parseInt(epCount);
-
-        for(var i = 1; i <= epCount; i++){
-            title = id+"_s";
-            if(season < 10){
-                title += "0"+season;
-            }else{
-                title += season;
-            }
-            title += "e";
-
-            if(i < 10){
-                title += "0"+i;
-            }else{
-                title += i;
-            }
-            title += "."+filetype;
-
-            episodes.push("/tv-shows/"+id+"/season_"+season+"/"+title);
+        if(num < 10){
+            printNum += "0";
         }
 
-        _r.push({
-            thumb: _thumb,
-            episodes: episodes
-        });
-    });
+        if(num < 0){
+            num = 0; // @TODO:ffl Make negative numbers valid
+        }
 
-    return _r;
-}
+        printNum += num;
 
-
-
-/**
- *  @param: (string)    id
- *          (string)    filetype    The filetype to the video
- *
- * */
-function createMovieUrl(id, filetype){
-    let url = "/movies/"+id+"/"+id+"."+filetype;
+        return printNum;
+    }
 
     return url;
 }
+function createThumbObj(body, vidID){
+    var thumb = {};
+    var buffer = JSON.parse(body.thumb);
 
-function convertToID(title:string):string{
-    let r = "";
+    if(buffer.small){
+        thumb.small = createThumbURL(vidID, "small", ".jpg");
+    }
+    if(buffer.large){
+        thumb.large = createThumbURL(vidID, "large", ".jpg");
+    }
 
-    title = title.toLowerCase();
-    for(var i = 0; i <= title.length; i++){
-        if(title.substring(i-1, i) == " "){
-            r += "_";
+    return thumb;
+}
+function createThumbURL(vidID, size, type){
+    var thumbURL = "/"+size+"/";
+
+    if(type.substring(0,1) != "."){
+        type = "."+type;
+    }
+
+    thumbURL += vidID+"_thumb"+type;
+
+    return thumbURL;
+}
+function createVidID(title){
+    var vidID = "";
+    var whiteSpaceChar = "_";
+
+    for(var i = 0; i < title.length; i++){
+        var str = title.substring(i, i+1);
+
+        if(str == " "){
+            vidID += whiteSpaceChar;
         }else{
-            r += title.substring(i-1, i);
+            vidID += str.toLowerCase();
         }
     }
-    return r;
+
+    return vidID;
 }
 
 
+function parseSeason(data, season){
 
-/**
- * @desc: Connects to the database
- * */
-function mongoConnect(url:string, res, callback){
-    MongoClient.connect(url, (err, db) => {
-        if(err){
-            printError({
-                title: "Connection ERROR",
-                message: err,
-                statusCode: 400
-            }, res);
-            return;
-        }
-
-        callback(err, db);
-    });
 }
 
 
-
-
-
-/** Middlefunction which handles validation of the parameters
- *
- * */
-function validateAPIVer(req, res, next){
-    let api:string = req.params.version;
-    let errorMsg = {
-        title: "API-version ERROR",
-        message: "Something was wrong with the API-version",
-        statusCode: 400
-    };
-
-
-    if(typeof api != "undefined") {
-        // Validate API-version
-        api = findAPIVersion(api, apiVersions);
-
-        if (api == null) {
-            errorMsg.message = "The API-version provided in the URL, is not valid!";
-            printError(errorMsg, res);
-            return;
-        }
-
-    }else{
-        errorMsg.message = "Missing API_version!";
-        printError(errorMsg, res);
-        return;
-    }
-
-
-    next();
-}
-
-/**
- *  @param: (string)    v           The provided API version
- *          (array)     versions    List of the valid API
- *  @desc: Iterates over the existing API versions, and compares it with the provided API version
- *  @return: (string) API version IF found, null if not
- * */
-function findAPIVersion(v:string, versions){
-    let _ver:string = null;
-
-    // TODO: implement version shortening with preservation of the numbers
-
-    // Iterate over API-versions
-    versions.forEach( (ver) => {
-        if(v == ver) {
-            _ver = v;
-        }
-    } );
-
-    return _ver;
-}
 
 
 /**
@@ -629,7 +525,6 @@ function printError(options, res){
     res.status(options.statusCode);
     res.end(JSON.stringify(errorMsg));
 }
-
 
 
 module.exports = router;

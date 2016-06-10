@@ -2,7 +2,9 @@
  * Created by Acer on 16.05.2016.
  */
 var btnUploadVideo = $('#admUploadVideo');
-var btnRemoveVideo = $('#admRemoveVideo');
+var btnRemoveVideo = $('.button-list-rm-label');
+var inputTitle = $('#video-title');
+var rmFeedback = $('#rmFeedback');
 var errColor = {
     server: "#FF4C68",
     client: "#FF6F40",
@@ -17,13 +19,14 @@ function toggleVideoRMSchema() {
     if (vidRemoveScheema.css('display') == "none") {
         display = "block";
     }
+    rmFeedback.html("");
+    rmFeedback.css('background-color', "#FFF");
+    inputTitle.css('border-color', "#aaa");
     vidRemoveScheema.css("display", display);
 }
 $('#removeVideoForm').submit(function (evt) {
     evt.preventDefault();
-    var rmFeedback = $('#rmFeedback');
     var vidID;
-    var inputTitle = $('#video-title');
     var title = inputTitle.val();
     // Check if title is missing
     if (title == "" || title == null) {
@@ -33,29 +36,39 @@ $('#removeVideoForm').submit(function (evt) {
         return;
     }
     vidID = convertTitleToVidID(title);
-    $.ajax({
-        url: "/videos/" + vidID,
-        type: "DELETE",
-        success: function (result) {
-            rmFeedback.css('background-color', errColor.success);
-            rmFeedback.html(title + " er no blitt fjerna");
-            inputTitle.css('border-color', errColor.success);
-            // Whait 3 seconds before page refreshes
-            setTimeout(function () {
-                location.reload();
-            }, 3000);
-        },
-        error: function (err) {
-            rmFeedback.css('background-color', errColor.server);
-            rmFeedback.html(err);
-        },
-        statusCode: {
-            404: function () {
+    // Get the user to confirm the DELETE
+    var confirmed = confirm("Er du sikker på at du vil slette " + title);
+    if (confirmed) {
+        // Send the DELETE request
+        $.ajax({
+            url: "/videos/" + vidID,
+            type: "DELETE",
+            success: function (result) {
+                console.log("FINISHED");
+                rmFeedback.css('background-color', errColor.success);
+                rmFeedback.html(title + " er no blitt fjerna");
+                inputTitle.css('border-color', errColor.success);
+                // Whait 3 seconds before page refreshes
+                setTimeout(function () {
+                    location.reload();
+                }, 3000);
+            },
+            error: function (err) {
                 rmFeedback.css('background-color', errColor.server);
-                rmFeedback.html("Fant ikkje adressa for å slette videoen");
+                console.log(err);
+                rmFeedback.html("ERROR");
+            },
+            statusCode: {
+                404: function () {
+                    rmFeedback.css('background-color', errColor.server);
+                    rmFeedback.html(title + "(" + vidID + ") Eksisterar ikkje");
+                }
             }
-        }
-    });
+        });
+    }
+    else {
+        toggleVideoRMSchema();
+    }
 });
 /**
  *  @desc: Simple method which converts the title, to the same format as vidIDs

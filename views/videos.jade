@@ -3,19 +3,29 @@ block styles
     link(rel="stylesheet", href="/stylesheets/home.css")
 
 block header
+    ul(class="buttons-list")
+        a(href="modify/new")
+            li(id="admUploadVideo", class="button-list-li glyphicon glyphicon-upload")
+        li(id="admRemoveVideo", class="button-list-li")
+            i(class="button-list-rm-label glyphicon glyphicon-remove")
+            div(class="vid-remove-scheema-container")
+                div(class="container-triangle")
+                h4(style="text-align: center") Sletteskjema
+                form(id="removeVideoForm", style="margin-left: 5%; margin-right: 5%;")
+                    p(id="rmFeedback", style="position: relative; width: 100%; padding: 2px; border-radius: 4px;")
+                    em For å slette skriv inn <strong>tittelen</strong> til videoen du vil fjerne
+                    br
+                    input(id="video-title",type="text", name="title", placeholder="Tittel til video", style="width: 80%;")
+                    input(type="submit", class="btnSubmitRmForm", value="Slett", style="padding: 1px; padding-left: 10px; padding-right: 10px; margin-bottom: 5px; margin-top: 5px;")
+
+        li(id="admUser", class="button-list-li")
+            i(class="glyphicon glyphicon-user", style="color:#fff;")
 
 block content
-    div(class="adm-button-container")
-        button(id="admUploadVideo", class="adm-button")
-            i(class="adm-button-icon glyphicon glyphicon-upload")
-            p(class="adm-button-label") Last opp
-        button(id="admRemoveVideo", class="adm-button", style="background-color:#FF193D; border-color: #B2001C")
-            i(class="adm-button-icon glyphicon glyphicon-remove")
-            p(class="adm-button-label") Fjern video
 
     h2(class='sub-title') Filmar
 
-    ul(class='media-listing')
+    ul(class='media-listing', style="")
         if movies.length == 0
             h3(style="text-align: center") Could not load Movie-list
         else
@@ -58,7 +68,7 @@ block content
                     li(class='media-listing-li')
                         div(class='media-img-container')
                             img(class='media-img',
-                                src='/res/thumb/'+tv.thumb.small,
+                                src='/res/thumb'+tv.thumb.small,
                                 alt=tv.vidID)
 
                         h3(class='media-title')=tv.title
@@ -83,12 +93,6 @@ block content
                                         style='font-size: 0.8em;')
                                     em &nbsp #{tv.viewcount}
 
-    div(class="vid-remove-scheema-container", style="display:block")
-        h4(style="text-align: center") Sletteskjema
-        form(id="removeVideoForm", style="margin-left: 5%; margin-right: 5%;")
-            p(id="rmFeedback", style="position: relative; width: 100%; padding: 3px; border-radius: 4px;")
-            em For å slette skriv inn <strong>tittelen</strong> til videoen du vil fjerne
-            input(id="video-title",type="text", name="title", placeholder="Tittel til video")
-            input(type="submit", value="Slett", style="padding: 1px; padding-left: 10px; padding-right: 10px; margin-bottom: 5px; margin-top: 5px;")
+
 block scripts
     script(type="text/javascript", src="/js/videos.js")

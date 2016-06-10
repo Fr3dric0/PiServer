@@ -1,0 +1,7 @@
+{
+  "title": "PiServer",
+  "author": "Fredrik Førde Lindhagen",
+  "api": "http://localhost:3000/api/v1",
+  "rest_api": "http://localhost:4567/api/v1",
+  "mongoUri": "mongodb://localhost:27017/PiMediaServer"
+}

@@ -2,8 +2,11 @@
  * Created by Acer on 16.05.2016.
  */
 
+
 var btnUploadVideo = $('#admUploadVideo');
-var btnRemoveVideo = $('#admRemoveVideo');
+var btnRemoveVideo = $('.button-list-rm-label');
+var inputTitle = $('#video-title');
+var rmFeedback = $('#rmFeedback');
 
 var errColor = {
     server: "#FF4C68",
@@ -17,21 +20,22 @@ btnRemoveVideo.click((evt) => {
 
 function toggleVideoRMSchema(){
     var vidRemoveScheema = $('.vid-remove-scheema-container');
-
     var display:string = "none";
 
     if(vidRemoveScheema.css('display') == "none"){
         display = "block";
     }
 
+    rmFeedback.html("");
+    rmFeedback.css('background-color', "#FFF");
+    inputTitle.css('border-color', "#aaa");
+
     vidRemoveScheema.css("display", display);
 }
 
 $('#removeVideoForm').submit((evt) => {
     evt.preventDefault();
-    var rmFeedback = $('#rmFeedback');
     var vidID:string;
-    var inputTitle = $('#video-title');
     var title = inputTitle.val();
 
     // Check if title is missing
@@ -45,31 +49,41 @@ $('#removeVideoForm').submit((evt) => {
 
     vidID = convertTitleToVidID(title);
 
-    $.ajax({
-        url: "/videos/"+vidID,
-        type: "DELETE",
-        success: (result) => {
-            rmFeedback.css('background-color', errColor.success);
-            rmFeedback.html(title + " er no blitt fjerna");
-            inputTitle.css('border-color', errColor.success);
+    // Get the user to confirm the DELETE
+    var confirmed = confirm("Er du sikker på at du vil slette "+title);
 
-            // Whait 3 seconds before page refreshes
-            setTimeout(()=> {
-                location.reload();
-            }, 3000);
-        },
-        error: (err) => {
-            rmFeedback.css('background-color',errColor.server);
-            rmFeedback.html(err);
-        },
-        statusCode: {
-            404: () => {
+    if(confirmed) {
+        // Send the DELETE request
+        $.ajax({
+            url: "/videos/" + vidID,
+            type: "DELETE",
+            success: (result) => {
+                console.log("FINISHED");
+
+                rmFeedback.css('background-color', errColor.success);
+                rmFeedback.html(title + " er no blitt fjerna");
+                inputTitle.css('border-color', errColor.success);
+
+                // Whait 3 seconds before page refreshes
+                setTimeout(()=> {
+                    location.reload();
+                }, 3000);
+            },
+            error: (err) => {
                 rmFeedback.css('background-color', errColor.server);
-                rmFeedback.html("Fant ikkje adressa for å slette videoen");
+                console.log(err);
+                rmFeedback.html("ERROR");
+            },
+            statusCode: {
+                404: () => {
+                    rmFeedback.css('background-color', errColor.server);
+                    rmFeedback.html(title+"("+vidID+") Eksisterar ikkje");
+                }
             }
-        }
-    });
-
+        });
+    }else{
+        toggleVideoRMSchema();
+    }
 });
 
 /**

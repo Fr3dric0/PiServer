@@ -7,8 +7,13 @@ var router = express.Router();
 var assert = require('assert');
 var request = require('request');
 
+var VideoFileHandler = require("../src/VideoFileHandler");
+
+var mongoose = require("mongoose");
+var TVShow = require("../models/tvshow");
+
 //var _uri = "http://localhost:3000";
-var _api_uri = "http://localhost:4567/api/v1";
+var _api_uri = "http://localhost:3000/api/v1";
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -17,14 +22,14 @@ router.get('/', function(req, res, next) {
     let buffer;
 
     request({
-        uri: _api_uri,
+        uri: req.config.rest_api,
         method: "GET",
         headers: {
             "Content-Type": "application/json"
         }
     }, (error, response, body) => {
         if(error){
-            res.send("Could not load data");
+            res.send("Could not connect to REST-API");
             return;
         }
 
@@ -33,7 +38,7 @@ router.get('/', function(req, res, next) {
         var mappedVideos = mapvideos(buffer);
 
         res.render('videos', {
-            title: "PiServer",
+            title: req.config.title,
             movies: mappedVideos["movies"],
             tv_shows: mappedVideos["tv-show"],
             user: req.user
@@ -106,10 +111,13 @@ router.get('/:vidId', (req, res, next) => {
                 case 'tv-show':
                     template = 'details';
                     break;
+                default:
+                    template = 'videoplayer';
+                    break;
             }
 
             res.render(template, {
-                title: "PiServer",
+                title: req.config.title,
                 video: validateThumbImages(video),
                 user: req.user
             })
@@ -179,7 +187,7 @@ router.get('/:vidID/:season/:episode', (req, res, next) => {
         let video = JSON.parse(body); // only take the first element.
 
         res.render("videoplayer",{
-            title: "PiServer",
+            title: req.config.title,
             video: video,
             conf: {
                 season: season,
@@ -191,21 +199,30 @@ router.get('/:vidID/:season/:episode', (req, res, next) => {
     });
 });
 
+
 router.delete('/:vidID', (req, res) => {
     var vidID = req.params.vidID;
 
-    console.log("deleting");
 
+    VideoFileHandler.deleteVideo(vidID, (err, response) => {
+        if(err){
+            res.status(400);
+            return res.send("Could not remove "+vidID);
+        }
 
-    res.status(200);
-    res.send(vidID+ " DELETED");
+        res.status = 200;
+        res.send(vidID+ " DELETED");
+        return "Success";
+    });
+
 });
 
 /**
  *  @desc:  Increments the viewcount for the video which calls it
  * */
 function incViewcount(vidID){
-    request({uri:"http://localhost:4567/api/v1/"+vidID+"/addview",
+    request({
+        uri:"http://localhost:4567/api/v1/"+vidID+"/addview",
         method: "PUT"
     }, (err, response, body) => {
         if(err){

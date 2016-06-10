@@ -6,7 +6,7 @@
 .cover-img-container{
     background-color: #212121;
     position: relative;
-    top: -14px;
+    top: -15px;
     left: 0;
     width: 100%;
     height: 255px;
@@ -30,7 +30,7 @@
     position: relative;
     text-align:center;
     z-index: 20;
-    color: #DDD;
+    color: #e3e3e3;
     font-size: 1.2em;
     margin-bottom: 0;
     margin-top: .2%;

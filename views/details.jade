@@ -2,7 +2,8 @@ extends layout
 block styles
    link(rel="stylesheet", href="/stylesheets/details.css")
 block title-area
-   a(class="video-anchor", href="/videos") video
+   strong(class="page-sepparator glyphicon glyphicon-menu-right")
+   a(class="video-anchor", href="/videos", style="margin-left:1%;") video
 
 block content
    div(class='cover-img-container')
@@ -11,9 +12,7 @@ block content
 
    table(class='statistics')
       tr
-         td( class='stat-clm', id='stat-genre',
-         style='font-size: 0.7em; word-wrap: break-word; width: 40%;')
-
+         td( class='stat-clm', id='stat-genre')
             if typeof video.genre != "undefined"
                strong=video.genre.join(", ")
          td( class='stat-clm', id='stat-rating',
