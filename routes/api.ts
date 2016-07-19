@@ -4,49 +4,101 @@
 let express = require('express');
 let fs = require('fs');
 var router = express.Router();
-var MongoClient = require('mongodb').MongoClient;
-var assert = require('assert');
-var ObjectID = require("mongodb").ObjectID;
 var request = require('request');
 var Movie = require('../models/movie');
 var TVShow = require('../models/tvshow');
 
-
-var validVideoTypes = ["mp4"];
-let collectionName = "videos";
-
+let sort_order = {"title": 1};
 
 /*====  GET  ====*/
-router.get('/', function(req, res, next) {
-    res.json({
-        title:"PiServer data collection API",
-        message: "specify version 'v1' and video ID 'the_martian' to get data from the server"
+router.get('/', function(req, res) {
+    var sorting = req.sorting || sort_order;
+
+    // GET MOVIES
+    getDataFromScheema(Movie, { sort: sorting, skip: req.skipping.movie}, (err, movies) => {
+        if(err){
+            return printError(err, res);
+        }
+
+        // GET TVSHOWS
+        getDataFromScheema(TVShow, { sort:sorting, skip: req.skipping.tvshow}, (err, shows) => {
+            if(err){
+                return printError(err, res);
+            }
+
+            var _r = {};
+
+            if(!movies){
+                _r = shows;
+            }else if(!shows){
+                _r = movies;
+            }else{
+                _r = {movies: movies, tvshows: shows};
+            }
+
+            res.status(200);
+            return res.json(_r);
+
+        });
+
     });
+
 });
+
+/**
+ *  @param: (MongoObject)   Scheema     The mongodb Scheema to collect data from
+ *          (Object)        conf        Different configuration data, like sorting, etc
+ *              (Boolean)       conf.skip   If the user want's to skip collection of data from the specified scheema.
+ *                                          he can set skip to true
+ *
+ *  @desc:  Uses the provided scheema and conf data, to get data from MongoDB.
+ *  @return: (Function)     Callback    Callback method with data from the scheema, and evt. errors
+ * */
+function getDataFromScheema(Scheema, conf, callback){
+    // Check if user wants to skip query
+    if(!conf.skip){
+
+        // Get data from MongoDB
+        Scheema.find(
+                conf.query || {}, // QUERY
+                { _id: false, __v: false } // FILTER OUT FIELDS
+            ).sort( conf.sort || {} ) // SORTING
+            .exec(
+            (err, data) => {
+                if(err){
+                return callback({title: "DATA COLLECTION ERROR", message: err, statusCode: 500});
+            }
+
+                return callback(null, data);
+            }
+        );
+
+    }else{
+        return callback(null, null);
+    }
+}
 
 
 router.get('/:vidID', (req, res) => {
     var vidID = req.params.vidID;
-    var response = {};
+    var sort = {title: -1}; // The default sorting sequence
 
-    console.log("=== GETTING ELEMENT ===");
 
-    TVShow.find({vidID: vidID}, (err, tvshow) => {
-        console.log("TVSHOW");
-        console.log(tvshow);
+    // First search in Movie
+    getDataFromScheema(Movie, { sort: sort, query: { vidID: vidID } }, (err, mov) => {
 
-        if(tvshow.length > 0){
-            response = tvshow[0];
-            res.json(response);
+        if(err){
+            return printError(err, res);
+        }
 
+        if(mov.length > 0){
+            return res.json(mov[0]);
+
+        // If media is not found, look in TVShows
         }else{
-            Movie.find({vidID: vidID}, (err1, movie) => {
-                console.log("MOVIE");
-                console.log(movie);
-
-                if(movie.length > 0){
-                    response = movie[0];
-                    res.json(response);
+            getDataFromScheema(TVShow, { sort: sort, query: { vidID: vidID } }, (err, show) => {
+                if(show.length > 0){
+                    return res.json(show[0]);
 
                 }else{
                     return printError({
@@ -55,17 +107,18 @@ router.get('/:vidID', (req, res) => {
                         statusCode: 404
                     }, res);
                 }
-
             });
         }
+
     });
 
 });
 
-
 router.get('/:vidID/:season', (req, res) => {
     var vidID = req.params.vidID;
     var season = req.params.season;
+
+
 
     TVShow.find({vidID: vidID}, (err, show) => {
         if(err){
@@ -90,7 +143,6 @@ router.get('/:vidID/:season', (req, res) => {
 
 });
 
-
 router.get('/:vidID/:season/:episode', (req, res) => {
     var vidID = req.params.vidID;
     var season = req.params.season;
@@ -104,7 +156,6 @@ router.get('/:vidID/:season/:episode', (req, res) => {
                 statusCode: 500
             }, res);
         }
-
 
         createPrintableEpisode(show[0], {
             season:season,
@@ -134,6 +185,7 @@ router.post('/', (req, res) => {
             return printError(err, res);
         }
 
+        // Check for duplicates
         checkIfMediaAlreadyExists(data, (err, exists) => {
             if(err){
                 return printError({
@@ -143,59 +195,218 @@ router.post('/', (req, res) => {
                 }, res);
             }
 
+            // Confirm if duplicate
             if(exists){
-
                 return printError({
                     title: "MEDIA ALREADY EXISTS",
                     message: "The media already exists. Check for duplicates, or choose a different title",
                     statusCode: 400
                 }, res);
-
-            }else{
-                media = data;
-
-                if(type == "movie"){
-                    var mov = Movie(media);
-                    // SAVE TO DATABASE
-                    mov.save( (saveErr) => {
-                        if(saveErr){
-                            return printError({
-                                title: "DATA UPLOAD ERROR",
-                                message: "Could not upload "+media.title+" to database",
-                                statusCode: 500
-                            }, res);
-                        }
-
-                        res.status = 200;
-                        res.json(media);
-                    })
-
-                }else if(type == "tv-show"){
-                    var show = TVShow(media);
-                    // SAVE TO DATABASE
-                    show.save( (saveErr) => {
-                        if(saveErr){
-                            return printError({
-                                title: "DATA UPLOAD ERROR",
-                                message: "Could not upload "+ media.title+" to database",
-                                statusCode: 500
-                            }, res);
-                        }
-
-                        res.status = 200;
-                        res.json(media);
-                    });
-                }
             }
-        });
 
+            media = data;
+
+            if(type == "movie"){
+                var mov = Movie(media);
+
+                // SAVE TO DATABASE
+                mov.save( (saveErr) => {
+                    if(saveErr){
+                        return printError({
+                            title: "DATA UPLOAD ERROR",
+                            message: "Could not upload "+media.title+" to database",
+                            statusCode: 500
+                        }, res);
+                    }
+
+                    res.status = 200;
+                    res.json(media);
+                })
+
+            }else if(type == "tv-show"){
+                var show = TVShow(media);
+
+                // SAVE TO DATABASE
+                show.save( (saveErr) => {
+                    if(saveErr){
+                        return printError({
+                            title: "DATA UPLOAD ERROR",
+                            message: "Could not upload "+ media.title+" to database",
+                            statusCode: 500
+                        }, res);
+                    }
+
+                    res.status = 200;
+                    res.json(media);
+                });
+            }
+
+        });
 
     });
 
 });
 
 
+router.put('/:vidID/addview', (req, res) => {
+    var vidID = req.params.vidID;
 
+    findMedia(vidID, (err, data) => {
+        if(err){
+            return printError(err, res);
+        }
+
+        switch(data.type){
+            case "tv-show":
+                TVShow.findOneAndUpdate({vidID: vidID}, {viewcount: data.viewcount + 1}, (updateErr, media) => {
+                    if(updateErr){
+                        return printError({
+                            title: "VIEWCOUNT INCREMENTATION ERROR",
+                            message: "Incrementation of tv-show "+vidID+" could not be completed",
+                            statusCode: 500
+                        }, res);
+                    }
+
+                    return res.json(media);
+                });
+                break;
+            case "movie":
+                Movie.findOneAndUpdate({vidID: vidID}, {viewcount: data.viewcount + 1}, (updateErr, media) => {
+                    if(updateErr){
+                        return printError({
+                            title: "VIEWCOUNT INCREMENTATION ERROR",
+                            message: "Incrementation of movie "+vidID+ "could not be completed",
+                            statusCode: 500
+                        }, res);
+                    }
+
+                    return res.json(media);
+                });
+                break;
+            default:
+                return printError({
+                    title: "UNSUPPORTED MEDIATYPE",
+                    message: "The mediatype: "+data.type+" in video: "+data.vidID+" is not supported",
+                    statusCode: 400
+                }, res);
+        }
+    });
+
+});
+router.put('/:vidID/change/:property/to/:value', (req, res) => {
+    var vidID = req.params.vidID;
+    var property = req.params.property;
+    var value = req.params.value;
+
+    updateMedia({vidID: vidID, key: property, value: value}, (err, media) => {
+        if(err){
+            return printError(err, res);
+        }
+
+        return res.json(media);
+    });
+
+});
+
+
+function updateMedia(options, callback){
+    if(typeof options.key == "undefined"){
+        return callback({title: "MISSING PROPERTY", message: "The key property is missing", statusCode: 400}, null);
+    }
+    if(typeof options.value == "undefined"){
+        return callback({title: "MISSING PROPERTY", message: "The value property is missing", statusCode: 400}, null);
+    }
+    if(typeof options.vidID == "undefined"){
+        return callback({title: "MISSING PROPERTY", message: "The vidID property is missing", statusCode: 400}, null);
+    }
+
+    findMediaType(options.vidID, (err, type) => {
+        if(err){
+            return callback(err, null);
+        }
+
+        var propertiesToUpdate = {};
+
+        propertiesToUpdate[options.key] = options.value;
+
+        /*
+        * If the property is 'title', then the vidID has to be updated
+        * */
+        if(options.key == "title"){
+            propertiesToUpdate.vidID = createVidID(options.value);
+        }
+
+        switch(type){
+            case 'tv-show':
+                TVShow.findOneAndUpdate({}, propertiesToUpdate, (updateErr, media) => {
+                    if(updateErr){
+                        return callback({title: updateErr}, null);
+                    }
+                    return callback(null, media);
+                });
+                break;
+            case 'movie':
+                Movie.findOneAndUpdate({}, propertiesToUpdate, (updateErr, media) => {
+                    if(updateErr){
+                        return callback({title: updateErr}, null);
+                    }
+                    return callback(null, media);
+                });
+                break;
+            default:
+                return callback({title: "UNSUPPORTED MEDIATYPE", message: "The mediatype '"+type+"', in '"+options.vidID+"' is not supported"}, null);
+        }
+    });
+
+}
+function findMediaType(vidID, callback){
+    findMedia(vidID, (err, media) => {
+        console.log("1. FINDING MEDIA");
+        if(err){
+            return callback(err, null);
+        }
+        console.log("2. FINDING MEDIATYPE");
+
+        if(typeof media.type == "undefined"){
+            return callback({title: "MISSING PROPERTY", message: "Missing property 'type'", statusCode: 500}, null);
+        }
+
+        return callback(null, media.type);
+
+    });
+
+}
+function findMedia(vidID, callback){
+    TVShow.find({vidID: vidID}, (err, show) => {
+        if(err){
+            return callback({title: err, statusCode: 500}, null);
+        }
+
+        if(show.length > 0 || Object.keys(show).length > 0){
+            return callback(null, show[0]);
+        }else{
+            Movie.find({vidID: vidID}, (err1, movie) => {
+                if(err1){
+                    return callback({title: err, statusCode: 500}, null);
+                }
+
+                if(movie.length > 0 || Object.keys(movie).length > 0){
+                    return callback(null, movie[0]);
+
+                    // return error to user if the media wasn't found in tv-shows or movies
+                }else{
+                    return callback({
+                        title: "DATA COLLECTION ERROR",
+                        message: "Could not find any tv-show or movie with vidID of "+vidID,
+                        statusCode: 400
+                    }, null);
+                }
+
+            });
+        }
+
+    });
+}
 
 function createPrintableEpisode(media, conf, callback){
     let epSize = 0;
@@ -227,7 +438,8 @@ function createPrintableEpisode(media, conf, callback){
     _r.episodes.current = {
         episode: parseInt(conf.episode),
         url: thisSeason.episodes[conf.episode-1],
-        thumb: thisSeason.thumb
+        thumb: thisSeason.thumb,
+        season: conf.season
     };
 
     // Try to get the previous episode
@@ -235,7 +447,8 @@ function createPrintableEpisode(media, conf, callback){
         _r.episodes.prev = {
             episode: parseInt(conf.episode)-1,
             url: thisSeason.episodes[conf.episode-2],
-            thumb: thisSeason.thumb
+            thumb: thisSeason.thumb,
+            season: conf.season
         };
     }
 
@@ -244,7 +457,8 @@ function createPrintableEpisode(media, conf, callback){
         _r.episodes.next = {
             episode: parseInt(conf.episode)+1,
             url: thisSeason.episodes[conf.episode],
-            thumb: thisSeason.thumb
+            thumb: thisSeason.thumb,
+            season: conf.season
         }
     }
 
@@ -254,10 +468,10 @@ function validateEpisodeNumber(media, conf){
     let epSize = 0;
     let seasonSize = 0;
 
-    if(typeof conf.season == "undefined"){
+    if(conf.season == "undefined"){
         throw JSON.stringify({title:"MISSING SEASON NUMBER", message: "Missing the value conf.season", statusCode: 400});
     }
-    if(typeof conf.episode == "undefined"){
+    if(conf.episode == "undefined"){
         throw JSON.stringify({title: "MISSING EPISODE NUMBER", message: "Missing the value conf.episode", statusCode: 400});
     }
 
@@ -282,7 +496,6 @@ function validateEpisodeNumber(media, conf){
 
 
 }
-
 /**
  *  @param: (Object)    Media   The specific show collected from the Database
  *          (Object)    conf    Configuration values. Obligated value: 'season'
@@ -352,6 +565,17 @@ function checkIfMediaAlreadyExists(media, callback){
 
     });
 }
+/**
+ *  @param: (Object)    body    Is the request body, provided in a POST request
+ *          (Function)  callback    The callback function
+ *
+ *  @desc:  Takes the provided values in the req.body, and converts it into valid values
+ *          for the database.
+ *
+ *          NOTICE: The method parses som values, based on the specified 'mediatype'.
+ *                  Currently only two mediatypes is accepted: movie and tv-show
+ *
+ * */
 function convertToMedia(body, callback){
     var media = {};
 
@@ -363,14 +587,16 @@ function convertToMedia(body, callback){
             statusCode: 400
         }, null);
     }
+
+    media.title = body.title;
     media.vidID = createVidID(body.title);
 
     if(!body.type){
         return callback({
-            title: "MISSING PROPERTY ERROR",
-            message:"Missing property 'type' in POST argument",
-            statusCode:400},
-        null);
+                title: "MISSING PROPERTY ERROR",
+                message:"Missing property 'type' in POST argument",
+                statusCode:400},
+            null);
     }
 
     media.type = body.type;
@@ -382,6 +608,8 @@ function convertToMedia(body, callback){
         media.rating = 10;
     }else if(body.rating < 0){
         media.rating = 0;
+    }else{
+        media.rating = body.rating;
     }
 
     // Get the "type-exclusive" values
@@ -391,6 +619,15 @@ function convertToMedia(body, callback){
         media.url = createVidUrl(media.vidID, media.type, {});
     }
 
+    var released;
+
+    try{
+        released = new Date(body.released)
+    }catch(e){
+        released = new Date();
+    }
+
+    media.uploaded = new Date();
 
     return callback(null, media);
 }
@@ -502,15 +739,6 @@ function createVidID(title){
 
     return vidID;
 }
-
-
-function parseSeason(data, season){
-
-}
-
-
-
-
 /**
  *
  * */

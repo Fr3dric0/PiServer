@@ -15,14 +15,29 @@ var TVShow = require("../models/tvshow");
 //var _uri = "http://localhost:3000";
 var _api_uri = "http://localhost:3000/api/v1";
 
-/* GET home page. */
+/* home page. */
 router.get('/', function(req, res, next) {
-    let movies = [];
-    let tv_show = [];
     let buffer;
+    var sort = req.query.sort || null;
+    var order = req.query.order || null;
 
+    var restURI = req.config.rest.url;
+
+    if(sort){
+        restURI += "?sort="+sort;
+
+        // Order should only be used, if sort exists
+        if(order){
+            restURI += "&order="+order;
+        }else{
+            restURI += "&order=asc";
+        }
+    }
+
+
+    // Get data from API
     request({
-        uri: req.config.rest_api,
+        uri: restURI,
         method: "GET",
         headers: {
             "Content-Type": "application/json"
@@ -33,17 +48,38 @@ router.get('/', function(req, res, next) {
             return;
         }
 
-        buffer = JSON.parse(body);
-
-        var mappedVideos = mapvideos(buffer);
+        // The body could send out html data.
+        // Use a try-block, to catch this
+        try {
+            buffer = JSON.parse(body); // @TODO:ffl fixes error
+        }catch(e){
+            res.status(400);
+            return res.send(body);
+        }
 
         res.render('videos', {
             title: req.config.title,
-            movies: mappedVideos["movies"],
-            tv_shows: mappedVideos["tv-show"],
-            user: req.user
+            movies: buffer.movies,
+            tv_shows: buffer.tvshows,
+            user: req.user,
+            error : (() => { // Check if error messages exists
+                if(req.session.error != null || req.session.error != undefined){
+                    if(Object.keys(req.session.error).length > 0) {
+                       let err = req.session.error;
+
+                       req.session.error = {};
+
+                       console.log(error);
+
+                       return err;
+                   }
+                }else{
+                    return null;
+                }
+            })()
         });
 
+        req.session.error = {};
     });
 
     /**
@@ -85,7 +121,7 @@ router.get('/:vidId', (req, res, next) => {
 
     // GET data
     request({
-        uri:_api_uri+"/"+vidId,
+        uri:req.config.rest.url+"/"+vidId,
         method: 'GET',
         headers:{
             "Content-Type": "application/json"
@@ -106,7 +142,7 @@ router.get('/:vidId', (req, res, next) => {
             switch(video.type){
                 case 'movie':
                     template = 'videoplayer';
-                    incViewcount(vidId);
+                    incViewcount(vidId, req);
                     break;
                 case 'tv-show':
                     template = 'details';
@@ -170,19 +206,37 @@ router.get('/:vidID/:season/:episode', (req, res, next) => {
     let season = req.params.season;
     let episode = req.params.episode;
 
+    if(season == "undefined" || season < 1){
+        req.session.error = {
+            title: "INVALID SEASON NUMBER",
+            message: "Sesongnummeret for programmet: "+vidID+" er ikkje gyldig"
+        }
+        res.redirect("/videos");
+    }
+
+    if(episode == "undefined" || episode < 1){
+        req.session.error = {
+            title: "INVALID EPISODE NUMBER",
+            message: "Episodenummeret for programmet: "+vidID+" er ikkje gyldig"
+        }
+        res.redirect("/videos")
+    }
+
+
+
     request({
-        uri: _api_uri +"/"+ vidID + "/" + season + "/" + episode,
+        uri: req.config.rest.url +"/"+ vidID + "/" + season + "/" + episode,
         method: "GET",
         headers: {
             "Content-Type": "application/json"
         }
     }, (err, response, body) => {
         if(err){
+            console.log("=== ERROR ===");
+            console.log(err);
             res.send(err);
             return;
         }
-
-        incViewcount(vidID);
 
         let video = JSON.parse(body); // only take the first element.
 
@@ -196,13 +250,13 @@ router.get('/:vidID/:season/:episode', (req, res, next) => {
             user: req.user
         });
 
+        incViewcount(vidID, req);
+
     });
 });
 
-
 router.delete('/:vidID', (req, res) => {
     var vidID = req.params.vidID;
-
 
     VideoFileHandler.deleteVideo(vidID, (err, response) => {
         if(err){
@@ -220,13 +274,13 @@ router.delete('/:vidID', (req, res) => {
 /**
  *  @desc:  Increments the viewcount for the video which calls it
  * */
-function incViewcount(vidID){
+function incViewcount(vidID, req){
     request({
-        uri:"http://localhost:4567/api/v1/"+vidID+"/addview",
+        uri:req.config.rest.url+"/"+vidID+"/addview",
         method: "PUT"
     }, (err, response, body) => {
         if(err){
-            console.err(err);
+            console.log(err);
             return;
         }
 
@@ -235,3 +289,24 @@ function incViewcount(vidID){
 
 
 module.exports = router;
+
+
+/* FUNGERANDE SYSTEM FOR Å HENTE KOMMENTARAR
+ var mysql = require('mysql');
+ var connection = mysql.createConnection({
+ host: 'localhost',
+ user: 'root',
+ password: '',
+ database: 'PiServer'
+ });
+
+ connection.connect();
+
+ connection.query('SELECT * FROM test.comment', (err, rows, fields) => {
+ if(err){
+ return console.log(err);
+ }
+
+ res.send(rows);
+
+ }); */

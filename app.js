@@ -41,19 +41,18 @@ passport.deserializeUser(User.deserializeUser());
 
 mongoose.connect('mongodb://localhost:27017/PiMediaServer');
 
-
+var api_middleware = require('./src/middleware/api_middleware');
 
 // Define routers
 app.use(addConfigToSession);
-app.use('/', routes); // Don't need to be authenticated
-app.use('/api/v1', require('./routes/api')); // Custom authentication
-app.use(userValidation);
-app.use('/videos', require('./routes/videos')); // Needs authentication
+app.use('/', routes); // No need to be authenticated
+app.use('/api/v1', api_middleware.sorting, api_middleware.filterMediatype, require('./routes/api')); // Custom authentication
+
+app.use(userValidation); // ↓ Needs authentication
+app.use('/videos', require('./routes/videos'));
 app.use('/user', require('./routes/user'));
 app.use('/modify', require('./routes/modify'));
 
-
-/* === Middleware === */
 
 function addConfigToSession(req, res, next){
   req.config = config;
@@ -63,19 +62,15 @@ function addConfigToSession(req, res, next){
 
 /**
  * @desc: Handles user validation. on every before request
- *
  * */
 function userValidation(req, res, next){
   if(req.user){
-    console.log("USER "+req.user.username+" FOUND\n");
     return next();
   }
 
-  console.log("COULD NOT FIND USER\n");
   return next();
   //return res.redirect("/");
 }
-
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

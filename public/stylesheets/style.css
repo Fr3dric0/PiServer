@@ -14,7 +14,7 @@ body{
 }
 
 .header{
-    background-color: rgb(21, 171, 237);
+    background-color: #0D5D7F;
     position: absolute;
     top: 0;
     width: 100%;
@@ -86,7 +86,7 @@ body{
     display: inline-block;
     color: #EFEFEF;
     white-space: nowrap;
-    font-size: 1.5em;
+    font-size: 0.8em;
     cursor: pointer;
     margin-left: 4%;
     margin-right: 4%;
@@ -108,13 +108,16 @@ body{
     top: 0;
     float: right;
     padding-right: 1%;
+    width: 125px;
     color: #efefef;
+    font-size: 0.9em;
 }
 
 .btnauth{
     color: #efefef;
     font-weight: 800;
     float: right;
+    white-space: nowrap;
 }
 
 .logout{
@@ -213,7 +216,6 @@ body{
     transition: all ease 1s;
 }
 
-
 .media-listing-li:first-child{
     margin-left: 0;
 }
@@ -242,15 +244,17 @@ body{
     height: 10%;
     margin-top: 2%;
     text-align: center;
-    font-size: 1.25em;
+    font-size: 1.2em;
+    width: 100%;
     word-wrap: break-word;
+    white-space: normal;
 }
-
 
 .statistics{
     position: relative;
     width: 100%;
     border-top: #ccc solid 1px;
+    overflow-y: hidden;
 }
 
 .stat-clm{

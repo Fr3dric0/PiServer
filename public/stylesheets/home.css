@@ -1,4 +1,9 @@
-
+p{
+    color: #08384C;
+}
+input{
+    color: #08384C;
+}
 
 .category-listing{
     position: relative;
@@ -46,4 +51,9 @@
     text-shadow: #555 0em 0em 0.4em;
 }
 
-
+.md-title{
+    border-bottom: #08384C solid 1px;
+    margin-left: 40%;
+    margin-right: 40%;
+    color: #08384C;
+}

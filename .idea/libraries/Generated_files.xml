@@ -3,6 +3,7 @@
     <properties>
       <sourceFilesUrls>
         <item url="file://$PROJECT_DIR$/src/VideoFileHandler.js" />
+        <item url="file://$PROJECT_DIR$/src/middleware/api_media_sorting.js" />
         <item url="file://$PROJECT_DIR$/public/js/FeedbackHandler.js" />
         <item url="file://$PROJECT_DIR$/routes/api.js" />
         <item url="file://$PROJECT_DIR$/routes/user.js" />
@@ -27,6 +28,7 @@
       <root url="file://$PROJECT_DIR$/models/video.js" />
       <root url="file://$PROJECT_DIR$/src/VideosConverter.js" />
       <root url="file://$PROJECT_DIR$/src/VideoFileHandler.js" />
+      <root url="file://$PROJECT_DIR$/src/middleware/api_middleware.js" />
       <root url="file://$PROJECT_DIR$/routes/videos.js" />
       <root url="file://$PROJECT_DIR$/models/movie.js" />
       <root url="file://$PROJECT_DIR$/models/views.js" />

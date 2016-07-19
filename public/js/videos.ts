@@ -3,7 +3,6 @@
  */
 
 
-var btnUploadVideo = $('#admUploadVideo');
 var btnRemoveVideo = $('.button-list-rm-label');
 var inputTitle = $('#video-title');
 var rmFeedback = $('#rmFeedback');
@@ -13,6 +12,47 @@ var errColor = {
     client:"#FF6F40",
     success: "#99FF8C"
 };
+
+var sort = getParameterByName("sort", window.location.href) || "title"; // Start values
+var order = getParameterByName("order", window.location.href) || "asc"; // Start values
+
+var sortMedia = $('#sort');
+var reversedMedia = $('#reversed');
+
+if(order == "desc"){
+    reversedMedia.prop("checked", true);
+}
+
+sortMedia.val(sort);
+
+// Find the field to sort by
+sortMedia.change( () => {
+    var _sort = sortMedia.val();
+    sort = _sort;
+    window.location.replace(removeQueryString(window.location.href)+setQueryStr());
+});
+
+// Find the order to sort by
+reversedMedia.change( () => {
+    var reversed = reversedMedia.is(':checked');
+
+    if(reversed){
+        order = "desc";
+    }else{
+        order = "asc";
+    }
+
+    window.location.replace(removeQueryString(window.location.href)+setQueryStr());
+});
+
+// Simple function which sets query string for the url.
+function setQueryStr(){
+    return "?sort="+sort+"&order="+order;
+}
+
+
+
+
 
 btnRemoveVideo.click((evt) => {
     toggleVideoRMSchema();
@@ -107,3 +147,29 @@ function convertTitleToVidID(title:string):string{
     return vidID;
 }
 
+
+
+function removeQueryString(url){
+    var str = "";
+
+    for(var i = 0; i < url.length; i++){
+        var buffer = url.substring(i, i+1);
+        if(buffer == "?"){
+            break;
+        }
+
+        str += buffer;
+    }
+
+    return str;
+}
+
+function getParameterByName(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}

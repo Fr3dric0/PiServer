@@ -55,7 +55,7 @@ block content
    - vid_url = ""
 
    if video.type == "tv-show"
-      - vid_url += "/tv-show/"+ video.vidID +"/season_"+ video.season +"/"+ video.episodes.current.url
+      - vid_url += video.episodes.current.url
       - thumb = video.episodes.current.thumb
    else if video.type == "movie"
       - thumb = video.thumb.small

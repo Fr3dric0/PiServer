@@ -3,32 +3,33 @@ block styles
     link(rel="stylesheet", href="/stylesheets/home.css")
 
 block header
-    ul(class="buttons-list")
-        a(href="modify/new")
-            li(id="admUploadVideo", class="button-list-li glyphicon glyphicon-upload")
-        li(id="admRemoveVideo", class="button-list-li")
-            i(class="button-list-rm-label glyphicon glyphicon-remove")
-            div(class="vid-remove-scheema-container")
-                div(class="container-triangle")
-                h4(style="text-align: center") Sletteskjema
-                form(id="removeVideoForm", style="margin-left: 5%; margin-right: 5%;")
-                    p(id="rmFeedback", style="position: relative; width: 100%; padding: 2px; border-radius: 4px;")
-                    em For å slette skriv inn <strong>tittelen</strong> til videoen du vil fjerne
-                    br
-                    input(id="video-title",type="text", name="title", placeholder="Tittel til video", style="width: 80%;")
-                    input(type="submit", class="btnSubmitRmForm", value="Slett", style="padding: 1px; padding-left: 10px; padding-right: 10px; margin-bottom: 5px; margin-top: 5px;")
-
-        li(id="admUser", class="button-list-li")
-            i(class="glyphicon glyphicon-user", style="color:#fff;")
 
 block content
 
-    h2(class='sub-title') Filmar
+    if (error != undefined || error != null)
+        if (Object.keys(error).length > 0)
+            pre(style="position:absolute; top: 4%; left: 33%; z-index: 20; background-color: #FF193D; border:none; box-shadow: #333 0.05em 0.05em 0.2em;")
+                h4=error.title
+                p=error.message
+
+    div(class="sort-field",style="margin-top: .5%; margin-bottom: 0; margin-left: 1%; position: relative; float: left; width: 250px;")
+        label(for="sort", style="margin-right: .5%") Sorter
+
+        select(id="sort", name="sorting")
+            option(value="title") Tittel
+            option(value="rating") Rangering
+            option(value="viewcount") Visningar
+            option(value="uploaded") Lasta opp
+            option(value="released") Lansert
+
+        label(for="reversed", style="margin-right: 5px; margin-left: 5px") Reversert
+        input(id="reversed", name="reversed", type="checkbox")
+
+    h2(class='sub-title md-title') Filmar
+    p(style="position: relative; float: right; width: 250px;") Søk: <em>CTRL + F -> skriv inn film eller serie du vil sjå</em>
 
     ul(class='media-listing', style="")
-        if movies.length == 0
-            h3(style="text-align: center") Could not load Movie-list
-        else
+        if movies.length > 0
             for movie in movies
                 a(href='/videos/'+movie.vidID)
                     li(class='media-listing-li')
@@ -57,12 +58,11 @@ block content
                                         style='font-size: 0.8em;')
                                     em &nbsp #{movie.viewcount}
 
-    h2(class='sub-title') TV-seriar
+    h2(class='sub-title md-title') TV-seriar
 
     ul(class='media-listing', id="tv-shows")
-        if tv_shows.length == 0
-            h3(style='text-align: center') Could not load TV-shows
-        else
+
+        if tv_shows.length > 0
             for tv in tv_shows
                 a(href='/videos/'+tv.vidID)
                     li(class='media-listing-li')
