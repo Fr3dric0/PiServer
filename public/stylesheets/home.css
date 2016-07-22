@@ -25,11 +25,9 @@ input{
     margin-right: 2%;
 }
 
-
 .category-list-li:active{
     box-shadow: none;
 }
-
 
 .preview-img{
     position: absolute;

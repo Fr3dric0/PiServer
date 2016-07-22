@@ -1,8 +1,4 @@
 
-.header{
-    background-color:#555;
-}
-
 .cover-img-container{
     background-color: #212121;
     position: relative;
@@ -26,36 +22,26 @@
     text-shadow: #212121 0.1em 0.1em 0.3em;
 }
 
-.show-details{
-    position: relative;
-    text-align:center;
-    z-index: 20;
-    color: #e3e3e3;
-    font-size: 1.2em;
-    margin-bottom: 0;
-    margin-top: .2%;
-}
-
 .statistics{
     top: 0;
     margin-top: 0;
     border-top: none;
     border-bottom: #555 solid 1px;
-    font-size: 1.5em;
+    font-size: 1.2em;
 }
 
 .stat-rating-ico{
-    width: 50px;
+    width: 30px;
     margin-bottom: 3px;
 }
 
-
-.details{
+p.details{
+    font-style: italic;
     position: relative;
     margin-top: 2%;
     margin-left: 10%;
     margin-right: 10%;
-    font-size: 1.5em;
+    font-size: 1.2em;
 }
 
 .season-listing{
@@ -70,3 +56,4 @@
     width: 150px;
     height: 175px;
 }
+

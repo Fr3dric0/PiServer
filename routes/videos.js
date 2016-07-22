@@ -117,7 +117,12 @@ router.get('/:vidId', function (req, res, next) {
         var video = JSON.parse(body);
         var template;
         if (typeof video != "undefined") {
-            // Decide which template to use
+            /*
+            * Decide the template to use
+            *   - 'movie' if the mediatype is a movie, then proceed straight to the videoplayer
+            *   - 'tvshow' if mediatype is a tvshow, then by this route we don't know which season or episode
+            *     the user wants to watch. Proceed therefore to the details paige, where the user can specify.
+            * */
             switch (video.type) {
                 case 'movie':
                     template = 'videoplayer';
@@ -132,7 +137,7 @@ router.get('/:vidId', function (req, res, next) {
             }
             res.render(template, {
                 title: req.config.title,
-                video: validateThumbImages(video),
+                video: video,
                 user: req.user
             });
         }
@@ -142,28 +147,6 @@ router.get('/:vidId', function (req, res, next) {
         }
     });
 });
-/**
- *
- *  @desc: Iterates over the template images in the tv-show
- * */
-function validateThumbImages(vid) {
-    var seasons = vid.seasons;
-    if (typeof seasons != "undefined") {
-        var i = 1;
-        seasons.forEach(function (s) {
-            if (s != null) {
-                if (typeof s.thumb == "undefined") {
-                    var tempUrl = "/small/" + vid.vidID + "_thumb" + i + ".jpg";
-                    s.thumb = tempUrl; // @TODO:ffl validate tempurl truly is a valid filename or not
-                }
-                else {
-                }
-            }
-            i++;
-        });
-    }
-    return vid;
-}
 /**
  * Episode is unspecified, therefore reroute the user to the details-page.
  * */
@@ -228,7 +211,10 @@ router.delete('/:vidID', function (req, res) {
     });
 });
 /**
- *  @desc:  Increments the viewcount for the video which calls it
+ *  @param: (String)    vidID   The identifier used for each movie or show
+ *          (Object)    req     Uses the request object to access config data, such as the REST-API URL
+ *  @desc:  Increments the viewcount for the specified video.
+ *          Sends a PUT request to the REST-API which handles communication to the database
  * */
 function incViewcount(vidID, req) {
     request({
