@@ -3,38 +3,19 @@ html
   head
     title= title
     meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width", initial-scale="1.0")
     link(rel='stylesheet', href='/bootstrap/css/bootstrap.css')
     link(rel='stylesheet', href='/stylesheets/style.css')
     block styles
         
   body()
     div(class="container")
-      div(class='header')
-        div(class='title-container')
-          img(src="/images/raspberrypi_ico.png", style="position: relative; float: left; width: 15px; margin-top: .75%; margin-left: 1%")
-          a(href="/")
-            h1(class='title')=title
-          block title-area
-
-        div.user-container()
-          if(user)
-            a.btnauth.logout(href="/logout") Logout
-            a(href="/user/"+user.username)
-              strong(style="position:relative; margin-top: 0;float:right; color:#efefef")=user.username
-              .profileimg-container
-                img.profile-img(src="/res/images/profile-img/flindhagen.jpg", alt="profile-img")
-          if(!user)
-            a.btnauth.login(href="/login") Login
-            br
-            a.btnauth.register(href="/register") Register
-
-        block header
+      include header/header
 
       div(class='content')
         block content
 
-      footer(class='footer', style="text-align: center;")
-        p &copy; Copyright 2016 by Fredrik Førde Lindhagen
+      include footer/footer
 
   script(src='/js/jquery-2.2.0.js')
 

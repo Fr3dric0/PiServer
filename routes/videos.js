@@ -111,12 +111,21 @@ router.get('/:vidId', function (req, res, next) {
         }
     }, function (err, response, body) {
         if (err) {
-            res.send(err);
-            return;
+            return next(err);
         }
-        var video = JSON.parse(body);
+        if (!body) {
+            var bodyErr = new Error("Could not get videodata");
+            bodyErr.status = 400;
+            return next(bodyErr);
+        }
+        try {
+            var video = JSON.parse(body);
+        }
+        catch (e) {
+            return res.send(body);
+        }
         var template;
-        if (typeof video != "undefined") {
+        if (video) {
             /*
             * Decide the template to use
             *   - 'movie' if the mediatype is a movie, then proceed straight to the videoplayer
@@ -125,14 +134,14 @@ router.get('/:vidId', function (req, res, next) {
             * */
             switch (video.type) {
                 case 'movie':
-                    template = 'videoplayer';
+                    template = 'mediaplayer';
                     incViewcount(vidId, req);
                     break;
                 case 'tv-show':
                     template = 'details';
                     break;
                 default:
-                    template = 'videoplayer';
+                    template = 'mediaplayer';
                     break;
             }
             res.render(template, {
@@ -142,17 +151,17 @@ router.get('/:vidId', function (req, res, next) {
             });
         }
         else {
-            res.send("<h1>Could not load media with id: " + vidId + "</h1>");
-            return;
+            var renderErr = new Error("Could not render media: " + vidId);
+            renderErr.status = 400;
+            return next(renderErr);
         }
     });
 });
 /**
  * Episode is unspecified, therefore reroute the user to the details-page.
  * */
-router.get('/:vidID/:season', function (req, res) {
-    res.redirect('/videos/' + req.params.vidID);
-    return;
+router.get('/:vidID/:season', function (req, res, next) {
+    return res.redirect('/videos/' + req.params.vidID);
 });
 router.get('/:vidID/:season/:episode', function (req, res, next) {
     var vidID = req.params.vidID;
@@ -180,13 +189,15 @@ router.get('/:vidID/:season/:episode', function (req, res, next) {
         }
     }, function (err, response, body) {
         if (err) {
-            console.log("=== ERROR ===");
-            console.log(err);
-            res.send(err);
-            return;
+            return next(err);
         }
-        var video = JSON.parse(body); // only take the first element.
-        res.render("videoplayer", {
+        try {
+            var video = JSON.parse(body); // only take the first element.
+        }
+        catch (e) {
+            return res.send(body);
+        }
+        res.render("mediaplayer", {
             title: req.config.title,
             video: video,
             conf: {

@@ -9,7 +9,6 @@ body{
 }
 
 .cover-img-container{
-    top: -15px;
     height: 185px;
     owerflow: hidden;
 }
@@ -23,30 +22,94 @@ body{
     text-decoration: none;
     color: #FFF;
 }
+
 .cover-img{
     -webkit-filter: blur(5px);
     -moz-filter: blur(5px);
     -o-filter: blur(5px);
     -ms-filter: blur(5px);
     filter: blur(5px);
-    top: -40%;
+    top: 0;
+    left: -10%;
+    width: 125%;
 }
 
 .sub-title{
-    margin-top: 8%;
-    font-size: 3.3em;
+    top: 30%;
+    font-size: 3.0em;
     text-shadow: #212121 0em 0em 0.8em;
 }
+
 p.details{
     font-style: italic;
     color: #aaa;
-    font-size: 0.9em;
+    font-size: 1.0em;
+    margin-bottom: 2%;
 }
 
 .stat-clm{
     color: #BBB;
-    font-size: 0.8em;
+    font-size: 1.0em;
 }
+
+
+.ep-nav-container{
+    position: relative;
+    list-style: none;
+    white-space: nowrap;
+    margin-top: 2%;
+    margin-left: 41%;
+}
+
+.ep-nav-container li{
+    display: inline-block;
+}
+
+.ep-nav-ico{
+    color: #efefef;
+    text-shadow: #111 0.05em 0.05em 0.2em;
+}
+
+.ep-nav-ico:first-child{
+    padding-right: 10px;
+}
+
+.ep-nav-ico:last-child{
+    padding-left: 10px;
+}
+
+.ep-nav-ico:hover{
+    text-shadow: none;
+}
+
+.ep-nav-anchor{
+    color: #efefef;
+    font-size: 1.4em;
+}
+
+
+@media screen and (min-width: 480px){
+    .cover-img{
+        top: -40%;
+    }
+
+    .sub-title{
+        margin-top: 8%;
+        font-size: 3.3em;
+    }
+
+    p.details{
+        font-size: 0.9em;
+    }
+
+    .ep-nav-container{
+        margin-left: 47%;
+    }
+
+}
+
+
+
 
 .video-js{
     position: relative;
@@ -71,12 +134,7 @@ p.details{
     color: #CCC;
 }
 
-.preview-container{
-    position: relative;
-    height: 150px;
-    cursor: pointer;
-    background-color: #444;
-}
+
 
 .gradient-bg-right{
     background: -webkit-gradient(linear, left top, right top, from(#444), to(rgba(0,0,0,0)));

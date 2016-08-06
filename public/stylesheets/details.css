@@ -2,17 +2,17 @@
 .cover-img-container{
     background-color: #212121;
     position: relative;
-    top: -15px;
     left: 0;
     width: 100%;
-    height: 255px;
+    height: 200px;
     overflow: hidden;
 }
 
 .cover-img{
     position: absolute;
-    width: 100%;
-    top: -30%;
+    left: -5%;
+    width: 125%;
+    top: -2%;
 }
 
 .vid-title{
@@ -24,10 +24,15 @@
 
 .statistics{
     top: 0;
-    margin-top: 0;
+    margin-top: 5px;
     border-top: none;
     border-bottom: #555 solid 1px;
     font-size: 1.2em;
+}
+
+/* Sett padding to all the columns in statistics-table */
+.statistics td{
+    padding-bottom: 5px;
 }
 
 .stat-rating-ico{
@@ -46,8 +51,8 @@ p.details{
 
 .season-listing{
     position: relative;
-    margin-left: 2%;
-    width: 96%;
+    margin-left: 1%;
+    width: 98%;
     list-style: none;
     overflow-x: hidden;
 }
@@ -57,3 +62,18 @@ p.details{
     height: 175px;
 }
 
+
+@media screen and (min-width: 480px) {
+
+    .cover-img {
+        left: -2%;
+        width: 105%;
+        top: -30%;
+    }
+
+    .season-listing {
+        margin-left: 2%;
+        width: 96%;
+    }
+
+}

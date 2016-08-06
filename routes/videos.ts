@@ -128,15 +128,24 @@ router.get('/:vidId', (req, res, next) => {
         }
     }, (err, response, body) => {
         if(err){
-            res.send(err);
-            return;
+            return next(err);
         }
 
-        let video = JSON.parse(body);
+        if(!body){
+            var bodyErr = new Error("Could not get videodata");
+            bodyErr.status = 400;
+            return next(bodyErr);
+        }
+
+        try {
+            var video = JSON.parse(body);
+        }catch(e){
+            return res.send(body);
+        }
 
         let template:string;
 
-        if(typeof video != "undefined"){
+        if(video){
 
             /*
             * Decide the template to use
@@ -146,14 +155,14 @@ router.get('/:vidId', (req, res, next) => {
             * */
             switch(video.type){
                 case 'movie':
-                    template = 'videoplayer';
+                    template = 'mediaplayer';
                     incViewcount(vidId, req);
                     break;
                 case 'tv-show':
                     template = 'details';
                     break;
                 default:
-                    template = 'videoplayer';
+                    template = 'mediaplayer';
                     break;
             }
 
@@ -163,8 +172,9 @@ router.get('/:vidId', (req, res, next) => {
                 user: req.user
             })
         }else{
-            res.send("<h1>Could not load media with id: "+vidId+"</h1>");
-            return;
+            var renderErr = new Error("Could not render media: "+vidId);
+            renderErr.status = 400;
+            return next(renderErr);
         }
     });
 
@@ -174,9 +184,8 @@ router.get('/:vidId', (req, res, next) => {
 /**
  * Episode is unspecified, therefore reroute the user to the details-page.
  * */
-router.get('/:vidID/:season', (req, res) => {
-    res.redirect('/videos/'+req.params.vidID);
-    return;
+router.get('/:vidID/:season', (req, res, next) => {
+    return res.redirect('/videos/'+req.params.vidID);
 });
 
 router.get('/:vidID/:season/:episode', (req, res, next) => {
@@ -210,15 +219,18 @@ router.get('/:vidID/:season/:episode', (req, res, next) => {
         }
     }, (err, response, body) => {
         if(err){
-            console.log("=== ERROR ===");
-            console.log(err);
-            res.send(err);
-            return;
+            return next(err);
         }
 
-        let video = JSON.parse(body); // only take the first element.
 
-        res.render("videoplayer",{
+        try {
+            var video = JSON.parse(body); // only take the first element.
+
+        // If the parsing failes, then the body is probably a html template
+        }catch(e){
+            return res.send(body);
+        }
+        res.render("mediaplayer",{
             title: req.config.title,
             video: video,
             conf: {

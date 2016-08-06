@@ -1,0 +1,86 @@
+extends layout
+
+block styles
+   link(href="/videojs/video-js.css", rel="stylesheet")
+   link(href="/stylesheets/details.css", rel="stylesheet")
+   link(href="/stylesheets/mediaplayer.css", rel="stylesheet")
+   script(src="/videojs/videojs-ie8.js")
+block header
+
+block title-area
+   strong(class="page-sepparator glyphicon glyphicon-menu-right")
+   a(class="video-anchor", href="/videos", style="margin-left:1%") video
+
+block content
+
+   - txtColor = "#BBB"
+
+   div(class='cover-img-container')
+      img(class="cover-img", src="/res/thumb/" + video.thumb.large)
+
+      // IF videotype is tv-show include season and episode number
+      - title = video.title
+
+      h2(class='sub-title', style="margin-top: 4%")
+         a(href="/videos/"+video.vidID, class="title-anchor")=title
+
+      if video.type == "tv-show"
+         h5(class="show-details")
+            em="Season: "+conf.season
+         h5(class="show-details")
+            em="Episode: "+conf.episode
+
+   table(class='statistics')
+      tr
+         td( class='stat-clm', id='stat-genre',
+         style='font-size: 0.7em; word-wrap: break-word; width: 40%;')
+            if typeof video.genre != "undefined"
+               strong(style="color:"+txtColor)=video.genre.join(", ")
+         td( class='stat-clm', id='stat-rating',
+         style='text-align: center;')
+            img(src='/images/imdb_flat.png', class='stat-rating-ico')
+            em(style="color:"+txtColor) &nbsp #{video.rating}
+         td( class='stat-clm',
+         id='stat-viewcount',
+         style='text-align: right; padding-left: 0; padding-right: 3%;')
+            i(  class='glyphicon glyphicon-eye-open',
+            style='font-size: 0.8em; color:'+txtColor)
+            em(style="color:"+txtColor) &nbsp #{video.viewcount}
+   p(class='details', style="font-family: georgia; color:"+txtColor)=video.details
+
+
+
+   - thumb = ""
+   - vid_url = ""
+
+   if video.type == "tv-show"
+      - vid_url += video.episodes.current.url
+      - thumb = video.episodes.current.thumb
+   else if video.type == "movie"
+      - thumb = video.thumb.small
+      - vid_url += video.url
+
+
+   video(id="my-video", class="video-js", controls, preload="auto", width="640", height="450", poster="/res/thumb"+thumb, data-setup="{}",
+   style="width: 100%; color: #f8f8f8; font-size: 0.9em;")
+      source(src=vid_url, type="video/mp4")
+      p(class='vjs-no-js')
+         | To view this video please enable JavaScript, and consider upgrading to a web browser that
+         a(target="_blank", href="http://videojs.com/html5-video-support/") supports HTML5 video
+
+   if video.type == "tv-show"
+      div.ep-nav
+         ul.ep-nav-container
+            if video.episodes.prev
+               li.ep-nav-list-left
+                  a.ep-nav-anchor(href="/videos/" + video.vidID + "/" + video.episodes.prev.season + "/" + video.episodes.prev.episode)
+                     i(class="glyphicon glyphicon-step-backward ep-nav-ico")
+                  //Forrige
+            if video.episodes.next
+               li.ep-nav-list-right
+                  a.ep-nav-anchor(href="/videos/" + video.vidID + "/" + video.episodes.next.season + "/" + video.episodes.next.episode)
+                     //Neste
+                     i(class="glyphicon glyphicon-step-forward ep-nav-ico")
+
+block scripts
+   script(src="/videojs/video.js")

@@ -1,28 +1,35 @@
 /**
  * Created by Acer on 24.03.2016.
+ * @TODO:ffl - migrate the REST API to it's own server. I have encounted multiple problems and frustrations by keeping both
+ *              the app and the api under one port.
+ *                  1. When using the request method, and an error is sent from the API. The request method won't catch this error.
+ *                  instead the error-handling template catches this. (causes the application to crash)
  */
 let express = require('express');
-let fs = require('fs');
 var router = express.Router();
 var request = require('request');
 var Movie = require('../models/movie');
 var TVShow = require('../models/tvshow');
+var MediaParser = require('../models/parser/mediaparser');
 
 let sort_order = {"title": 1};
 
-/*====  GET  ====*/
+// GET /api/v1/
 router.get('/', function(req, res) {
+
     var sorting = req.sorting || sort_order;
 
     // GET MOVIES
     getDataFromScheema(Movie, { sort: sorting, skip: req.skipping.movie}, (err, movies) => {
         if(err){
+            // @TODO:ffl - replace printError() with real 'new Error()'
             return printError(err, res);
         }
 
         // GET TVSHOWS
         getDataFromScheema(TVShow, { sort:sorting, skip: req.skipping.tvshow}, (err, shows) => {
             if(err){
+                // @TODO:ffl - replace printError() with real 'new Error()'
                 return printError(err, res);
             }
 
@@ -38,51 +45,17 @@ router.get('/', function(req, res) {
 
             res.status(200);
             return res.json(_r);
-
         });
-
     });
 
 });
 
-/**
- *  @param: (MongoObject)   Scheema     The mongodb Scheema to collect data from
- *          (Object)        conf        Different configuration data, like sorting, etc
- *              (Boolean)       conf.skip   If the user want's to skip collection of data from the specified scheema.
- *                                          he can set skip to true
- *
- *  @desc:  Uses the provided scheema and conf data, to get data from MongoDB.
- *  @return: (Function)     Callback    Callback method with data from the scheema, and evt. errors
- * */
-function getDataFromScheema(Scheema, conf, callback){
-    // Check if user wants to skip query
-    if(!conf.skip){
-
-        // Get data from MongoDB
-        Scheema.find(
-                conf.query || {}, // QUERY
-                { _id: false, __v: false } // FILTER OUT FIELDS
-            ).sort( conf.sort || {} ) // SORTING
-            .exec(
-            (err, data) => {
-                if(err){
-                return callback({title: "DATA COLLECTION ERROR", message: err, statusCode: 500});
-            }
-
-                return callback(null, data);
-            }
-        );
-
-    }else{
-        return callback(null, null);
-    }
-}
 
 
-router.get('/:vidID', (req, res) => {
+// GET /api/v1/:vidID
+router.get('/:vidID', (req, res, next) => {
     var vidID = req.params.vidID;
     var sort = {title: -1}; // The default sorting sequence
-
 
     // First search in Movie
     getDataFromScheema(Movie, { sort: sort, query: { vidID: vidID } }, (err, mov) => {
@@ -94,18 +67,17 @@ router.get('/:vidID', (req, res) => {
         if(mov.length > 0){
             return res.json(mov[0]);
 
-        // If media is not found, look in TVShows
+            // If media is not found, look in TVShows
         }else{
             getDataFromScheema(TVShow, { sort: sort, query: { vidID: vidID } }, (err, show) => {
                 if(show.length > 0){
                     return res.json(show[0]);
 
                 }else{
-                    return printError({
-                        title: "VIDEO NOT FOUND",
-                        message: "Could not find video with a vidID of "+vidID,
-                        statusCode: 404
-                    }, res);
+                    var searchErr = new Error("Could not find video "+vidID);
+                    searchErr.status = 404;
+                    searchErr.api = true;
+                    return next(searchErr);
                 }
             });
         }
@@ -122,6 +94,8 @@ router.get('/:vidID/:season', (req, res) => {
 
     TVShow.find({vidID: vidID}, (err, show) => {
         if(err){
+            // @TODO:ffl - replace printError() with real 'new Error()'
+
             return printError({
                 title: "MEDIA LOADING ERROR",
                 message: "Could not get TV-show from database",
@@ -130,8 +104,9 @@ router.get('/:vidID/:season', (req, res) => {
         }
 
 
-        createPrintableSeason(show[0], {season:season}, (err, printable) => {
+        MediaParser.printableSeason(show[0], {season:season}, (err, printable) => {
             if(err){
+                // @TODO:ffl - replace printError() with real 'new Error()'
                 return printError(err, res);
             }
 
@@ -143,30 +118,32 @@ router.get('/:vidID/:season', (req, res) => {
 
 });
 
-router.get('/:vidID/:season/:episode', (req, res) => {
+router.get('/:vidID/:season/:episode', (req, res, next) => {
     var vidID = req.params.vidID;
     var season = req.params.season;
     var episode = req.params.episode;
 
-    TVShow.find({vidID:vidID}, (err, show) => {
+    TVShow.findOne({vidID:vidID}, (err, show) => {
         if(err){
-            return printError({
-                title: "MEDIA LOADING ERROR",
-                message: "Could not get tv-show from the database",
-                statusCode: 500
-            }, res);
+            return next(err);
         }
 
-        createPrintableEpisode(show[0], {
+        if(!show){
+            var searchErr = new Error("Could not find tv-show: "+vidID);
+            searchErr.status = 404;
+            return next(searchErr);
+        }
+
+        MediaParser.printableEpisodes(show, {
             season:season,
             episode:episode
         }, (err1, printable) => {
             if(err1){
+                // @TODO:ffl - replace printError() with real 'new Error()'
                 return printError(err1, res);
             }
 
-            res.json(printable);
-            return;
+            return res.json(printable);
         });
 
     });
@@ -174,76 +151,94 @@ router.get('/:vidID/:season/:episode', (req, res) => {
 });
 
 
-router.post('/', (req, res) => {
-    var vidID = req.params.vidID;
+router.post('/', (req, res, next) => {
     var type = req.body.type;
 
-    var media;
+    if(!req.body.type || !req.body.title){
+        // @TODO:ffl - replace printError() with real 'new Error()'
+        return printError({
+            title: "MISSING REQUIRED DATA IN POST BODY",
+            message: "Both type and title are required fields",
+            statusCode: 400
+        }, res);
+    }
 
-    convertToMedia(req.body, (err, data) => {
-        if(err){
-            return printError(err, res);
+    if(type == "movie"){
+        // Convert thumb to object
+        var thumb;
+        try{
+            thumb = JSON.parse(req.body.thumb);
+        }catch(e){
+            thumb = {};
         }
 
-        // Check for duplicates
-        checkIfMediaAlreadyExists(data, (err, exists) => {
-            if(err){
+        Movie.create({
+            title: req.body.title,
+            thumb: thumb,
+            type : type,
+            url: req.body.url,
+            rating: req.body.rating,
+            viewcount: req.body.viewcount || 0,
+            details: req.body.details,
+            genre: req.body.genre.trim().split(','),
+            released: new Date(req.body.released)
+        }, (saveErr, m)=>{
+
+            if(saveErr){
                 return printError({
-                    title: "DATA COLLECTION ERROR",
-                    messsage: "Could not properly connect to the Database",
-                    statusCode: 500
+                    title: "MEDIA UPLOAD ERROR",
+                    message: saveErr.message,
+                    statusCode: saveErr.status
                 }, res);
             }
 
-            // Confirm if duplicate
-            if(exists){
-                return printError({
-                    title: "MEDIA ALREADY EXISTS",
-                    message: "The media already exists. Check for duplicates, or choose a different title",
-                    statusCode: 400
-                }, res);
-            }
-
-            media = data;
-
-            if(type == "movie"){
-                var mov = Movie(media);
-
-                // SAVE TO DATABASE
-                mov.save( (saveErr) => {
-                    if(saveErr){
-                        return printError({
-                            title: "DATA UPLOAD ERROR",
-                            message: "Could not upload "+media.title+" to database",
-                            statusCode: 500
-                        }, res);
-                    }
-
-                    res.status = 200;
-                    res.json(media);
-                })
-
-            }else if(type == "tv-show"){
-                var show = TVShow(media);
-
-                // SAVE TO DATABASE
-                show.save( (saveErr) => {
-                    if(saveErr){
-                        return printError({
-                            title: "DATA UPLOAD ERROR",
-                            message: "Could not upload "+ media.title+" to database",
-                            statusCode: 500
-                        }, res);
-                    }
-
-                    res.status = 200;
-                    res.json(media);
-                });
-            }
-
+            res.status = 200;
+            res.json(m);
         });
 
-    });
+    }else if(type == "tv-show"){
+        var thumb;
+        try{
+            thumb = JSON.parse(req.body.thumb);
+        }catch(e){
+            thumb = {};
+        }
+
+        var seasons = setSeason(req.body, MediaParser.createVidID(req.body.title));
+
+        if(!seasons){
+            var seasonParseError = new Error("[SEASON PARSE ERROR] One of the input fields is missing or wrongly formatted");
+            seasonParseError.status = 400;
+            return next(seasonParseError);
+        }
+
+        TVShow.create({
+            title: req.body.title,
+            thumb: thumb,
+            type : type,
+            seasons: seasons,
+            rating: req.body.rating,
+            viewcount: req.body.viewcount,
+            details: req.body.details,
+            genre: req.body.genre.trim().split(",") || [],
+            released: new Date(req.body.released)
+
+        }, (saveErr, tv) => {
+            if(saveErr){
+                // @TODO:ffl - replace printError() with real 'new Error()'
+                return printError({
+                    title: "DATA UPLOAD ERROR",
+                    message: saveErr.message,
+                    statusCode: saveErr.status
+                }, res);
+            }
+
+            res.status = 200;
+            res.json(tv);
+        });
+
+    }
+
 
 });
 
@@ -253,13 +248,14 @@ router.put('/:vidID/addview', (req, res) => {
 
     findMedia(vidID, (err, data) => {
         if(err){
-            return printError(err, res);
+            return null;
         }
 
         switch(data.type){
             case "tv-show":
                 TVShow.findOneAndUpdate({vidID: vidID}, {viewcount: data.viewcount + 1}, (updateErr, media) => {
                     if(updateErr){
+                        // @TODO:ffl - replace printError() with real 'new Error()'
                         return printError({
                             title: "VIEWCOUNT INCREMENTATION ERROR",
                             message: "Incrementation of tv-show "+vidID+" could not be completed",
@@ -273,6 +269,7 @@ router.put('/:vidID/addview', (req, res) => {
             case "movie":
                 Movie.findOneAndUpdate({vidID: vidID}, {viewcount: data.viewcount + 1}, (updateErr, media) => {
                     if(updateErr){
+                        // @TODO:ffl - replace printError() with real 'new Error()'
                         return printError({
                             title: "VIEWCOUNT INCREMENTATION ERROR",
                             message: "Incrementation of movie "+vidID+ "could not be completed",
@@ -284,6 +281,7 @@ router.put('/:vidID/addview', (req, res) => {
                 });
                 break;
             default:
+                // @TODO:ffl - replace printError() with real 'new Error()'
                 return printError({
                     title: "UNSUPPORTED MEDIATYPE",
                     message: "The mediatype: "+data.type+" in video: "+data.vidID+" is not supported",
@@ -293,6 +291,7 @@ router.put('/:vidID/addview', (req, res) => {
     });
 
 });
+
 router.put('/:vidID/change/:property/to/:value', (req, res) => {
     var vidID = req.params.vidID;
     var property = req.params.property;
@@ -330,10 +329,10 @@ function updateMedia(options, callback){
         propertiesToUpdate[options.key] = options.value;
 
         /*
-        * If the property is 'title', then the vidID has to be updated
-        * */
+         * If the property is 'title', then the vidID has to be updated
+         * */
         if(options.key == "title"){
-            propertiesToUpdate.vidID = createVidID(options.value);
+            propertiesToUpdate.vidID = MediaParser.createVidID(options.value);
         }
 
         switch(type){
@@ -408,230 +407,14 @@ function findMedia(vidID, callback){
     });
 }
 
-function createPrintableEpisode(media, conf, callback){
-    let epSize = 0;
 
-    try{
-        validateEpisodeNumber(media, conf);
-    }catch(e){
-        return callback(JSON.parse(e), null);
-    }
-
-    epSize = media.seasons[conf.season-1].episodes.length;
-
-    var _r = {
-        vidID : media.vidID,
-        title: media.title,
-        thumb: media.thumb,
-        type: typeof media.type != "undefined" ? media.type : "tv-show",
-        rating: media.rating,
-        details: media.details,
-        genre: media.genre,
-        viewcount: media.viewcount,
-        uploaded: typeof media.uploaded != "undefined" ? media.uploaded : new Date(),
-        season: parseInt(conf.season),
-        episodes: {}
-    };
-
-    var thisSeason = media.seasons[conf.season-1];
-
-    _r.episodes.current = {
-        episode: parseInt(conf.episode),
-        url: thisSeason.episodes[conf.episode-1],
-        thumb: thisSeason.thumb,
-        season: conf.season
-    };
-
-    // Try to get the previous episode
-    if(conf.episode > 1){
-        _r.episodes.prev = {
-            episode: parseInt(conf.episode)-1,
-            url: thisSeason.episodes[conf.episode-2],
-            thumb: thisSeason.thumb,
-            season: conf.season
-        };
-    }
-
-    // Try to get the next episode
-    if(conf.episode < epSize){
-        _r.episodes.next = {
-            episode: parseInt(conf.episode)+1,
-            url: thisSeason.episodes[conf.episode],
-            thumb: thisSeason.thumb,
-            season: conf.season
-        }
-    }
-
-    return callback(null, _r);
-}
-function validateEpisodeNumber(media, conf){
-    let epSize = 0;
-    let seasonSize = 0;
-
-    if(conf.season == "undefined"){
-        throw JSON.stringify({title:"MISSING SEASON NUMBER", message: "Missing the value conf.season", statusCode: 400});
-    }
-    if(conf.episode == "undefined"){
-        throw JSON.stringify({title: "MISSING EPISODE NUMBER", message: "Missing the value conf.episode", statusCode: 400});
-    }
-
-    // CHECK SEASON NUMBERS
-    seasonSize = media.seasons.length;
-    if(conf.season < 1){
-        throw JSON.stringify({title: "INVALID SEASON NUMBER", message: "The season number cannot be less than 1!", statusCode: 400});
-    }
-    if(conf.season > seasonSize){
-        throw JSON.stringify({title: "INVALID SEASON NUMBER", message: "The season number cannot bigger than the seasons available!", statusCode: 400});
-    }
-
-    // CHECK EPISODE NUMBERS
-    epSize = media.seasons[conf.season-1].episodes.length;
-    if(conf.episode < 1){
-        throw JSON.stringify({title: "INVALID EPISODE NUMBER", message: "The episode number cannot be less than 1!", statusCode: 400});
-    }
-    if(conf.episode > epSize){
-        throw JSON.stringify({title: "INVALID EPISODE NUMBER",
-            message: "The episode number is bigger than the number of episodes avilable in this season", statusCode: 400});
-    }
-
-
-}
-/**
- *  @param: (Object)    Media   The specific show collected from the Database
- *          (Object)    conf    Configuration values. Obligated value: 'season'
- *          (Function)  callback    The callback function
- *  @desc:  Puts the data we are interested in, into the _r variable.
- *          Then checks if conf.season exists and is a valid number.
- *          Last, add the values season and episodes
- *
- *  @return (Object) The whole season in print-friendly format
- * */
-function createPrintableSeason(media, conf, callback){
-    var errorMsg = {title: "MEDIA PARSING ERROR", message:"", statusCode: 500};
-
-    var _r = {
-        vidID: media.vidID,
-        title: media.title,
-        thumb: media.thumb,
-        type: media.type,
-        rating: media.rating,
-        details: media.details,
-        genre: media.genre,
-        viewcount: media.viewcount,
-        uploaded: typeof media.uploaded != "undefined" ? media.uploaded : new Date()
-    };
-
-    if(typeof conf.season == "undefined"){
-        errorMsg.message = "conf.season is missing!";
-        return callback(errorMsg, null);
-    }
-    if(conf.season < 1){
-        return callback({title:"INVALID SEASON NUMBER", message: "The season number cannot be less than 1!", statusCode: 400}, null);
-    }
-
-    _r.season  = conf.season;
-
-    _r.episodes = media.seasons[conf.season-1];
-
-    return callback(null, _r);
-
-}
-/**
- *  @desc:  Checks the collections 'movie' and 'tvshow' for an identical video
- * */
-function checkIfMediaAlreadyExists(media, callback){
-    TVShow.find({vidID: media.vidID}, (err, data) => {
-        if(err){
-            return callback(err, null);
-        }
-        if(data.length > 0 || Object.keys(data).length > 0){
-            return callback(null, true);
-        }else{
-
-            Movie.find({vidID: media.vidID}, (err1, data1) => {
-                if(err1){
-                    return callback(err1, null);
-                }
-
-                if(data1.length > 0 || Object.keys(data).length > 0){
-                    return callback(null, true);
-
-                }else{ // Confirmed, The media does not exist
-                    return callback(null, false);
-                }
-            });
-        }
-
-
-    });
-}
-/**
- *  @param: (Object)    body    Is the request body, provided in a POST request
- *          (Function)  callback    The callback function
- *
- *  @desc:  Takes the provided values in the req.body, and converts it into valid values
- *          for the database.
- *
- *          NOTICE: The method parses som values, based on the specified 'mediatype'.
- *                  Currently only two mediatypes is accepted: movie and tv-show
- *
- * */
-function convertToMedia(body, callback){
-    var media = {};
-
-    // The title must be included
-    if(!body.title){
-        return callback({
-            title: "MISSING PROPERTY ERROR",
-            message: "Missing title in the POST arguments",
-            statusCode: 400
-        }, null);
-    }
-
-    media.title = body.title;
-    media.vidID = createVidID(body.title);
-
-    if(!body.type){
-        return callback({
-                title: "MISSING PROPERTY ERROR",
-                message:"Missing property 'type' in POST argument",
-                statusCode:400},
-            null);
-    }
-
-    media.type = body.type;
-    media.thumb = createThumbObj(body, media.vidID);
-    media.genre = body.genre.trim().split(",");
-    media.details = body.details;
-
-    if(body.rating > 10){
-        media.rating = 10;
-    }else if(body.rating < 0){
-        media.rating = 0;
-    }else{
-        media.rating = body.rating;
-    }
-
-    // Get the "type-exclusive" values
-    if(media.type == "tv-show"){
-        media.seasons = setSeason(body, media.vidID);
-    }else if(media.type == "movie"){
-        media.url = createVidUrl(media.vidID, media.type, {});
-    }
-
-    var released;
-
-    try{
-        released = new Date(body.released)
-    }catch(e){
-        released = new Date();
-    }
-
-    media.uploaded = new Date();
-
-    return callback(null, media);
-}
 function setSeason(body, vidID){
+    if(!body.seasons){
+        var seasonErr = new Error("Season field is required!");
+        seasonErr.status = 400;
+        return seasonErr;
+    }
+
     var seasons = body.seasons.trim().split(",");
     var _s = [];
 
@@ -639,12 +422,12 @@ function setSeason(body, vidID){
         var epNum = parseInt(val);
         var buffer = {};
 
-        buffer.thumb = createThumbURL(vidID, "small", ".j");
+        buffer.thumb = MediaParser.createThumbURL(vidID, "small", ".j");
         buffer.thumb = buffer.thumb.substring(0, buffer.thumb.length - ".j".length) + (key+1)+ ".jpg";
 
         buffer.episodes = [];
         for(var i = 0; i < val; i++){
-            buffer.episodes.push(createVidUrl(vidID, "tv-show", {season: key+1, episode: i+1}));
+            buffer.episodes.push(MediaParser.createVidUrl(vidID, "tv-show", {season: key+1, episode: i+1}));
         }
 
         _s.push(buffer);
@@ -652,101 +435,56 @@ function setSeason(body, vidID){
 
     return _s;
 }
-function createVidUrl(vidID, type, options){
-    var url = "/res/videos/"+type+"/";
 
-    url += vidID + "/";
 
-    if(options && Object.keys(options).length > 0 ){
-        if(!options.season){
-            throw JSON.stringify({title: "MISSING PROPERTY", message: "Property 'season' is missing in options.", statusCode: 400});
-        }
-        if(!options.episode){
-            throw JSON.stringify({title: "MISSING PROPERTY", message:"Property 'episode' is missing in options", statusCode: 400})
-        }
+/**
+ *  @param: (MongoObject)   Scheema     The mongodb Scheema to collect data from
+ *          (Object)        conf        Different configuration data, like sorting, etc
+ *              (Boolean)       conf.skip   If the user want's to skip collection of data from the specified scheema.
+ *                                          he can set skip to true
+ *
+ *  @desc:  Uses the provided scheema and conf data, to get data from MongoDB.
+ *  @return: (Function)     Callback    Callback method with data from the scheema, and evt. errors
+ * */
+function getDataFromScheema(Scheema, conf, callback){
+    // Check if user wants to skip query
+    if(!conf.skip){
 
-        url += "season_"+options.season;
-        url += "/"+vidID;
+        // Get data from MongoDB
+        Scheema.find(
+            conf.query || {}, // QUERY
+            { _id: false, __v: false } // FILTER OUT FIELDS
+        ).sort( conf.sort || {} ) // SORTING
+            .exec(
+            (err, data) => {
+                if(err){
+                    // @TODO:ffl - replace printError() with real 'new Error()'
+                    return callback({title: "DATA COLLECTION ERROR", message: err, statusCode: 500});
+                }
 
-        url += "_s"+getPrintableNumber(options.season);
-        url += "e"+ getPrintableNumber(options.episode);
-        url += ".mp4";
+                return callback(null, data);
+            }
+        );
 
     }else{
-        url += vidID + ".mp4";
+        return callback(null, null);
     }
-
-
-    /**
-     *  @desc:  A number should always print out double digits (03 or 24) or more, even though the number is less than 10.
-     *          This function creates this printable version of the number.
-     * */
-    function getPrintableNumber(num){
-        var printNum = "";
-
-        if(num < 10){
-            printNum += "0";
-        }
-
-        if(num < 0){
-            num = 0; // @TODO:ffl Make negative numbers valid
-        }
-
-        printNum += num;
-
-        return printNum;
-    }
-
-    return url;
 }
-function createThumbObj(body, vidID){
-    var thumb = {};
-    var buffer = JSON.parse(body.thumb);
 
-    if(buffer.small){
-        thumb.small = createThumbURL(vidID, "small", ".jpg");
-    }
-    if(buffer.large){
-        thumb.large = createThumbURL(vidID, "large", ".jpg");
-    }
-
-    return thumb;
-}
-function createThumbURL(vidID, size, type){
-    var thumbURL = "/"+size+"/";
-
-    if(type.substring(0,1) != "."){
-        type = "."+type;
-    }
-
-    thumbURL += vidID+"_thumb"+type;
-
-    return thumbURL;
-}
-function createVidID(title){
-    var vidID = "";
-    var whiteSpaceChar = "_";
-
-    for(var i = 0; i < title.length; i++){
-        var str = title.substring(i, i+1);
-
-        if(str == " "){
-            vidID += whiteSpaceChar;
-        }else{
-            vidID += str.toLowerCase();
-        }
-    }
-
-    return vidID;
-}
 /**
- *
+ *  @param:     [Object]    options     Includes the elements of the error message
+ *                                          * title: The title of the error
+ *                                          * message: The error message
+ *                                          * statusCode: the http statusCode
+ *              [Object]       res      The response object
+ *  @desc:      Is responsible for handling and print out the error message
+ *  @return:    void
  * */
 function printError(options, res){
     let errorMsg = {
         title: (options.title == "" ? "Error" : options.title),
         message: (options.message || "Error in server"),
-        statusCode: (options.statusCode || 400)
+        statusCode: (options.statusCode || 500)
     };
 
     res.setHeader('content-type', 'application/json');

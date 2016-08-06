@@ -10,7 +10,7 @@ body{
     position: relative;
     background-color: #F8F8F8;
     padding: 0;
-    width: 80%;
+    width: 100%;
 }
 
 .header{
@@ -20,6 +20,7 @@ body{
     width: 100%;
     height: 30px;
 
+    overflow-y: hidden;
     z-index: 30;
 }
 
@@ -36,7 +37,7 @@ body{
     position: relative;
     font-size: 1.5em;
     padding-left: 1%;
-    margin-top: .4%;
+    margin-top: 3px;
     top: 0;
     color: #f8f8f8;
     float: left;
@@ -47,19 +48,27 @@ body{
     color: #FFF;
 }
 
+.title-img{
+    position: relative;
+    float: left;
+    width: 15px;
+    margin-top: 5px;
+    margin-left: 1%
+}
+
 .page-sepparator{
     position: relative;
     float: left;
     color: #EEE;
     margin-left: 1%;
-    margin-top: 1.8%;
+    margin-top: 10px;
     font-size: 0.7em;
 }
 
 .video-anchor{
     position: relative;
     float: left;
-    margin-top: .4%;
+    margin-top: 3px;
     margin-left: 2%;
     font-size: 1.3em;
     color: #e3e3e3;
@@ -93,24 +102,12 @@ body{
     text-shadow: #888 0em 0em 0.3em;
 }
 
-.button-list-rm-label{
-    color: #FF4C68;
-}
-
-
-.button-list-li:hover{
-    text-shadow: #777 0em 0em 0.2em;
-}
-
 
 .user-container{
     position:relative;
     top: 0;
     float: right;
-    padding-right: 1%;
-    width: 125px;
-    color: #efefef;
-    font-size: 0.9em;
+    padding-right: 0;
 }
 
 .btnauth{
@@ -118,13 +115,6 @@ body{
     font-weight: 800;
     float: right;
     white-space: nowrap;
-}
-
-.logout{
-    color: #FF8888;
-    font-weight: 800;
-    padding-left: 4%;
-    float: right;
 }
 
 .profileimg-container{
@@ -148,7 +138,7 @@ body{
 
 .sub-title{
     position: relative;
-    text-align: center;    
+    text-align: center;
 }
 
 .content{
@@ -163,26 +153,6 @@ body{
     padding-top: 25px;
 }
 
-.blur{
-    -webkit-filter: blur(5px);
-    -moz-filter: blur(5px);
-    -o-filter: blur(5px);
-    -ms-filter: blur(5px);
-    filter: blur(5px);
-    -webkit-transition: all .2s ease;
-    -moz-transition: all .2s ease;
-    -o-transition: all .2s ease;
-    -ms-transition: all .2s ease;
-    transition: all .5s ease;
-}
-
-.deblur{
-    -webkit-filter: blur(0px);
-    -moz-filter: blur(0px);
-    -o-filter: blur(0px);
-    -ms-filter: blur(0px);
-    filter: blur(0px);
-}
 
 .media-listing{
     position: relative;
@@ -201,12 +171,12 @@ body{
     display: inline-block; /* Prevents the list from wrapping*/
     border-radius: 3px;
     box-shadow: #AAA 0.1em 0.1em 0.2em;
-    
+
     width: 200px;
     height: 275px;
     margin: 5px;
     color: #212121;
-    
+
     overflow: hidden;
 
     -webkit-transition: all ease 1s;
@@ -227,16 +197,15 @@ body{
     width: 100%;
     height: 75%;
     overflow: hidden;
-    
+
     box-shadow: inset #212121 0em -0.2em 0.3em;
 }
-    
+
 .media-img{
-   position: absolute;
-   width: 110%;
-   left: -5%;
-   top: -5%;
-   
+    position: absolute;
+    width: 110%;
+    left: -5%;
+    top: -5%;
 }
 
 .media-title{
@@ -275,36 +244,196 @@ body{
 }
 
 
-.vid-remove-scheema-container{
+.authentication{
+    position: relative;
+    margin-left: 1%;
+    margin-right: 1%;
+    margin-bottom: 2%;
+}
+
+
+.form-control{
+    border-radius: 2px;
+}
+
+
+
+
+.btn{
+    position: relative;
+    float: right;
+    background-color: #0D5D7F;
+    padding: 0.3em;
+    padding-left: 1.0em;
+    padding-right: 1.0em;
+    color: #efefef;
+    -webkit-transition: all .3s ease;
+    -moz-transition: all .3s ease;
+    -o-transition: all .3s ease;
+    transition: all .3s ease;
+}
+
+.btn:hover{
+    color: #ddd;
+}
+
+.btn-primary{
+    float: none;
+    border-radius: 0;
+    width: 100%;
+
+    margin-left: 0;
+    margin-right: 0;
+    padding-top: 10px;
+    padding-bottom: 10px;
+
+    font-weight: 800;
+}
+
+.btn-primary:hover{
     background-color: #FFF;
-    position: absolute;
-    z-index: 80;
-    top: 120%;
-    left: -820%;
-    font-size: 0.7em;
-
-    width: 200px;
-
-    box-shadow: #212121 0.1em 0.1em 0.3em;
-    text-shadow: none;
-
-    display: none;
-    white-space: normal;
+    color: #0D5D7F;
 }
 
-.container-triangle{
-    position: absolute;
-    left: 86%;
-    top: -10px;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-
-    border-bottom: #fff 10px solid ;
+.btn-login{
+    background-color: #078C6B;
+    color: #FFF;
 }
+
+.btn-login:hover{
+    background-color: #FFF;
+    color: #078C6B;
+    border: #078C6B solid 1px;
+}
+
+.btn-logout{
+    background-color: #FFF;
+    color: #8C1C2F;
+    font-weight: 800;
+    float: right;
+    margin-right: 0;
+    border-radius: 0;
+}
+
+.btn-logout:hover{
+    background-color: #8C1C2F;
+    color: #efefef;
+}
+
+.btn-hyperlink{
+    width: 96%;
+    margin-left: 2%;
+    margin-right: 2%;
+    background-color: #078C6B;
+}
+
+.btn-large{
+    font-size: 1.5em;
+    padding-left: 2.0em;
+    padding-right: 2.0em;
+}
+
+
+.btn-register{
+    color: #0D5D7F;
+    background-color: #FFF;
+    border-radius: 0;
+    font-weight: 400;
+    font-size: 1.1em;
+    margin-right: 0;
+    padding: 0;
+    height: 30px;
+    padding-left: 0.8em;
+    padding-right: 0.8em;
+    font-weight: 800;
+}
+
+.btn-register:hover{
+    background-color: #0D5D7F;
+    color: #FFF;
+}
+
+
+.ingress{
+    text-align: center;
+    font-style: italic;
+}
+
+@media screen and (min-width: 1000px){
+    .container{
+        width: 85%;
+    }
+}
+
+@media screen and (min-width: 480px){
+
+    .authentication{
+        margin-left: 35%;
+        margin-right: 35%;
+    }
+
+    .btn{
+        width: auto;
+        margin-left: 35%;
+    }
+
+    .btn-logout{
+        float: right;
+        margin-right: 0;
+        border-radius: 0;
+    }
+
+    .btn-primary{
+        padding-top: 5px;
+        padding-bottom: 5px;
+    }
+
+
+    .btn-register{
+        margin: 0;
+    }
+
+    .user-container{
+        top: 0;
+        width: 20%;
+        font-size: 0.9em;
+    }
+
+    .btn-hyperlink{
+        margin-left: 41%;
+        padding-left: 5%;
+        padding-right: 5%;
+    }
+
+}
+
+
 
 
 footer{
-    margin-top: 20px;
+    margin-top: 80px;
     position: relative;
     width: 100%;
+}
+
+
+.blur{
+    -webkit-filter: blur(5px);
+    -moz-filter: blur(5px);
+    -o-filter: blur(5px);
+    -ms-filter: blur(5px);
+    filter: blur(5px);
+    -webkit-transition: all .2s ease;
+    -moz-transition: all .2s ease;
+    -o-transition: all .2s ease;
+    -ms-transition: all .2s ease;
+    transition: all .5s ease;
+}
+
+.deblur{
+    -webkit-filter: blur(0px);
+    -moz-filter: blur(0px);
+    -o-filter: blur(0px);
+    -ms-filter: blur(0px);
+    filter: blur(0px);
 }

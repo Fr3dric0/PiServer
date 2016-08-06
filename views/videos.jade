@@ -1,6 +1,6 @@
 extends layout
 block styles
-    link(rel="stylesheet", href="/stylesheets/home.css")
+    link(rel="stylesheet", href="/stylesheets/videos.css")
 
 block header
 
@@ -12,7 +12,7 @@ block content
                 h4=error.title
                 p=error.message
 
-    div(class="sort-field",style="margin-top: .5%; margin-bottom: 0; margin-left: 1%; position: relative; float: left; width: 250px;")
+    div.sort-field
         label(for="sort", style="margin-right: .5%") Sorter
 
         select(id="sort", name="sorting")
@@ -25,8 +25,9 @@ block content
         label(for="reversed", style="margin-right: 5px; margin-left: 5px") Reversert
         input(id="reversed", name="reversed", type="checkbox")
 
+    div.search-field
+        p(style="") Søk: <em>CTRL + F -> skriv inn film eller serie du vil sjå</em>
     h2(class='sub-title md-title') Filmar
-    p(style="position: relative; float: right; width: 250px;") Søk: <em>CTRL + F -> skriv inn film eller serie du vil sjå</em>
 
     ul(class='media-listing', style="")
         if movies.length > 0
