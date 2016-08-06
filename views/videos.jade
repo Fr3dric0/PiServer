@@ -1,15 +1,36 @@
 extends layout
 block styles
+    link(rel="stylesheet", href="/stylesheets/videos.css")
 
 block header
 
 block content
-    h2(class='sub-title') Filmar
 
-    ul(class='media-listing')
-        if movies.length == 0
-            h3(style="text-align: center") Could not load Movie-list
-        else
+    if (error != undefined || error != null)
+        if (Object.keys(error).length > 0)
+            pre(style="position:absolute; top: 4%; left: 33%; z-index: 20; background-color: #FF193D; border:none; box-shadow: #333 0.05em 0.05em 0.2em;")
+                h4=error.title
+                p=error.message
+
+    div.sort-field
+        label(for="sort", style="margin-right: .5%") Sorter
+
+        select(id="sort", name="sorting")
+            option(value="title") Tittel
+            option(value="rating") Rangering
+            option(value="viewcount") Visningar
+            option(value="uploaded") Lasta opp
+            option(value="released") Lansert
+
+        label(for="reversed", style="margin-right: 5px; margin-left: 5px") Reversert
+        input(id="reversed", name="reversed", type="checkbox")
+
+    div.search-field
+        p(style="") Søk: <em>CTRL + F -> skriv inn film eller serie du vil sjå</em>
+    h2(class='sub-title md-title') Filmar
+
+    ul(class='media-listing', style="")
+        if movies.length > 0
             for movie in movies
                 a(href='/videos/'+movie.vidID)
                     li(class='media-listing-li')
@@ -38,18 +59,17 @@ block content
                                         style='font-size: 0.8em;')
                                     em &nbsp #{movie.viewcount}
 
-    h2(class='sub-title') TV-seriar
+    h2(class='sub-title md-title') TV-seriar
 
     ul(class='media-listing', id="tv-shows")
-        if tv_shows.length == 0
-            h3(style='text-align: center') Could not load TV-shows
-        else
+
+        if tv_shows.length > 0
             for tv in tv_shows
                 a(href='/videos/'+tv.vidID)
                     li(class='media-listing-li')
                         div(class='media-img-container')
                             img(class='media-img',
-                                src='/res/thumb/'+tv.thumb.small,
+                                src='/res/thumb'+tv.thumb.small,
                                 alt=tv.vidID)
 
                         h3(class='media-title')=tv.title
@@ -74,4 +94,6 @@ block content
                                         style='font-size: 0.8em;')
                                     em &nbsp #{tv.viewcount}
 
+
 block scripts
+    script(type="text/javascript", src="/js/videos.js")

@@ -1,537 +1,401 @@
 /**
  * Created by Acer on 24.03.2016.
+ * @TODO:ffl - migrate the REST API to it's own server. I have encounted multiple problems and frustrations by keeping both
+ *              the app and the api under one port.
+ *                  1. When using the request method, and an error is sent from the API. The request method won't catch this error.
+ *                  instead the error-handling template catches this. (causes the application to crash)
  */
 var express = require('express');
-var fs = require('fs');
 var router = express.Router();
-var MongoClient = require('mongodb').MongoClient;
-var assert = require('assert');
-var ObjectID = require("mongodb").ObjectID;
 var request = require('request');
-var VideosConverter = require('../src/VideosConverter');
-var mongoUrl = "mongodb://localhost:27017/PiMediaServer";
-var apiVersions = ["v1"];
-var errorJson = {
-    title: "Error",
-    message: ""
-};
-var validVideoTypes = ["mp4"];
-var collectionName = "videos";
-var Videos = require('../models/video'); // Get the Videos model
-/*====  GET  ====*/
-router.get('/', function (req, res, next) {
-    res.json({
-        title: "PiServer data collection API",
-        text: "specify version 'v1' and video ID 'the_martian' to get data from the server"
-    });
-});
-/** Unspecified url, return all
- * */
-router.get('/:version', validateAPIVer, function (req, res, next) {
-    var mediatype = req.query.type || null;
-    var queryobj = {};
-    if (mediatype) {
-        queryobj = { type: mediatype };
-    }
-    // Find the video objects
-    Videos.find(queryobj, { _id: false }, function (err, media) {
+var Movie = require('../models/movie');
+var TVShow = require('../models/tvshow');
+var MediaParser = require('../models/parser/mediaparser');
+var sort_order = { "title": 1 };
+// GET /api/v1/
+router.get('/', function (req, res) {
+    var sorting = req.sorting || sort_order;
+    // GET MOVIES
+    getDataFromScheema(Movie, { sort: sorting, skip: req.skipping.movie }, function (err, movies) {
         if (err) {
-            return printError({
-                title: "QUERY ERROR",
-                message: err,
-                statusCode: 400
-            }, res);
+            // @TODO:ffl - replace printError() with real 'new Error()'
+            return printError(err, res);
         }
-        res.json(media);
-    });
-});
-// Specified vidID
-router.get('/:version/:vidID', validateAPIVer, function (req, res, next) {
-    var queryobject = { vidID: req.params.vidID }; // Query properties, used to specify what to get from DB
-    var mediaType = req.query.type || null; // ?type=xxxxx specify which mediatype the data is
-    if (mediaType != null) {
-        queryobject.type = mediaType;
-    }
-    Videos.findOne({ vidID: req.params.vidID }, { _id: false }, function (err, vid) {
-        if (err) {
-            return printError({
-                title: "QUERY ERROR",
-                message: err,
-                statusCode: 400
-            }, res);
-        }
-        res.json(vid);
-    });
-});
-// Requests season of a show
-router.get('/:version/:vidID/:season', validateAPIVer, function (req, res, next) {
-    var version = req.params.version;
-    var season = req.params.season;
-    var vidID = req.params.vidID;
-    // ERRORHANDLING: to low season index
-    if (season < 1) {
-        printError({
-            title: "INDEX OUT OF BOUND ERROR",
-            message: "The requested season cannot be 0 or lower!",
-            statusCode: 404
-        }, res);
-        return;
-    }
-    request({
-        uri: 'http://localhost:3000/api/' + version + '/' + vidID,
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    }, function (err, response, body) {
-        if (err) {
-            return printError({
-                title: "ERROR",
-                message: err,
-                statusCode: 400
-            }, res);
-        }
-        var buffer = JSON.parse(body)[0];
-        //ERRORHANDLING: season number is to high
-        if (season > buffer.seasons.length) {
-            return printError({
-                title: "INDEX OUT OF BOUNDS ERROR",
-                message: "The requested season is bigger than the season indexes available",
-                statusCode: 404
-            }, res);
-        }
-        var vid = {
-            vidID: buffer.vidID,
-            title: buffer.title,
-            thumb: buffer.thumb,
-            type: buffer.type,
-            season: parseInt(season),
-            episodes: buffer.seasons[season - 1],
-            rating: buffer.rating,
-            viewcount: buffer.viewcount,
-            details: buffer.details,
-            genre: buffer.genre,
-            uploaded: buffer.uploaded
-        };
-        res.json(vid);
-    });
-});
-/*
-router.get('/api/v1/:vidID/:season/:episode', (req, res) => {
-    let vidID = req.params.vidID;
-    let season = parseInt(req.params.season);
-    let episode = parseInt(req.params.episode);
-
-    console.log("=== RUNNING ===");
-
-    request({
-        uri:'http://localhost:4567/api/v1/'+vidID+"/"+season+'/'+episode,
-        method: 'GET',
-        headers:{
-            'Content-Type': 'application/json'
-        }
-    },
-        (err, response, body) => {
-            if(err){
-                return printError({
-                    title: "ERROR",
-                    message: err,
-                    statusCode: 400
-                }, res);
+        // GET TVSHOWS
+        getDataFromScheema(TVShow, { sort: sorting, skip: req.skipping.tvshow }, function (err, shows) {
+            if (err) {
+                // @TODO:ffl - replace printError() with real 'new Error()'
+                return printError(err, res);
             }
-
-            switch(response.statusCode){
-                case 200:
-                    return res.json(JSON.parse(body)[0]);
-                    break;
-                case 201:
-                    return res.json(JSON.parse(body)[0]);
-                    break;
-                case 400:
-                    return printError({
-                        title: "CLIENT ERROR",
-                        message: "Could not load the data because an error on the client side",
-                        statusCode: 400
-                    }, res);
-                    break;
-                case 404:
-                    return printError({
-                        title: "DATA NOT FOUND",
-                        message: "Could not find the data you were looking for",
-                        statusCode: 404
-                    }, res);
-                    break;
+            var _r = {};
+            if (!movies) {
+                _r = shows;
             }
-        }
-    );
-});
-*/
-/**
- *  @url-param: (string)    vidID   The identification for the video
- *              (int)       season  The selected season
- *              (int)       episode Requested episode
- *  @desc:  The user request data with specific focus on 'this' episode.
- *          Router should gather the data, remove all other episodes, except the current, previous and the next.
- *
- *          Everything will be parsed to an object-element in the 'vids'-array
- *
- *  @return: (Array) With single object with mentioned data
- *
- *  EXAMPLE:
- *      URL: /api/v1/silicon_valley/1/2
- *      RETURNS:
- *              {
- *                  vidID: 'silicon_valley',
- *                  title: 'Silicon Valley',
- *                  thumb: {
- *                      small: "/small/silicon_valley_thumb.jpg",
- *                      large: "/large/silicon_valley_thumb.jpg"
- *                  },
- *                  type: "tv-show",
- *                  season: 1
- *                  episodes: {
- *                      current: "silicon_valley_s01e02.mp4",
- *                      next: "silicon_valley_s01e03.mp4",
- *                      previous: "silicon_valley_s01e01.mp4"
- *                  },
- *                  rating: 8.5,
- *                  viewcount: 83,
- *                  details: ......................
- *              }
- *
- * */
-router.get('/:version/:vidID/:season/:episode', validateAPIVer, function (req, res, next) {
-    var version = req.params.version;
-    var vidID = req.params.vidID;
-    var season = parseInt(req.params.season);
-    var episode = parseInt(req.params.episode);
-    var vids = [];
-    if (episode < 1) {
-        printError({
-            title: "INDEX OUT OF BOUNDS ERROR",
-            message: "The episode number cannot be 0 or lower!",
-            statusCode: 404
-        }, res);
-        return;
-    }
-    // GET DATA
-    request({
-        uri: 'http://localhost:3000/api/' + version + '/' + vidID + "?type=tv-show",
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    }, function (err, response, body) {
-        if (err) {
-            printError({
-                title: "ERROR",
-                message: err,
-                statusCode: 400
-            }, response);
-            return;
-        }
-        var buffer = JSON.parse(body);
-        //TODO:ffl Create middleware validationhandling for season and episodes
-        // Check if SEASON is larger than the seasons available
-        if (season > buffer.seasons.length) {
-            printError({
-                title: "INDEX OUT OF BOUNDS ERROR",
-                message: "The requested season is bigger than the seasons available",
-                statusCode: 400
-            }, res);
-            return;
-        }
-        else if (season < 1) {
-            printError({
-                title: "INDEX OUT OF BOUNDS ERROR",
-                message: "The requested season cannot be lower than 0",
-                statusCode: 400
-            }, res);
-            return;
-        }
-        // Check if REQUESTED episode is bigger than available episodes
-        if (episode > buffer.seasons[season - 1].episodes.length) {
-            printError({
-                title: "INDEX OUT OF BOUNDS ERROR",
-                message: "The requested episode number is bigger than the episodes available!",
-                statusCode: 400
-            }, res);
-            return;
-        }
-        //                      Get first element from buffer
-        vids.push(transformVideoJson(buffer, { season: season, episode: episode }));
-        if (vids[0] == null) {
-            return;
-        }
-        res.json(vids);
-    });
-});
-/**
- *  @param: (Object)    data    The data recieved from the request
- *          (Object)    conf    Includes config data, like requested:
- *                                  - episode
- *                                  - season
- *  @desc:
- *      1. Checks if data includes 'vidID', this is an obligatory datastring.
- *      2. GET and CHECK if current season exists.
- *      3. Start to set data which don't need extra modification and parsing.
- *      4. Checks if the next and previous episodes is in the scope of the shows season and episodes.
- *      5. Put all data inside local variable 'd'
- *
- *  @return (Object) d
- * */
-function transformVideoJson(data, conf) {
-    if (!data.vidID) {
-        console.log("INVALID DATA ERROR");
-        console.log("\tCould not find vidID in program, every show MUST have a vidID for identification!");
-        return null;
-    }
-    // Store the current season
-    var currSeason = data.seasons[conf.season - 1];
-    // CHECK if current season exists
-    if (!currSeason) {
-        return null;
-    }
-    // Check if current episode is bigger or smaller than the episodes available
-    if ((conf.episode - 1 > currSeason.episodes.length) || (conf.episode - 1 < 0)) {
-        return null;
-    }
-    // Start to collect data, which don't need parsing and modification
-    var d = {
-        vidID: data.vidID,
-        title: data.title,
-        thumb: data.thumb,
-        type: data.type,
-        season: parseInt(conf.season),
-        episodes: {
-            current: {
-                thumb: currSeason.thumb,
-                url: currSeason.episodes[conf.episode - 1]
-            }
-        },
-        rating: data.rating,
-        viewcount: data.viewcount,
-        details: data.details,
-        genre: data.genre
-    };
-    // CHECKS if the episode was the last in the season
-    if (conf.episode > currSeason.episodes.length - 1) {
-        // CHECKS if there is another season
-        if (data.seasons.length - 1 > conf.season) {
-            d.episodes.next = {
-                thumb: data.seasons[conf.season].thumb,
-                url: data.seasons[conf.season].episodes[0],
-                season: conf.season + 1,
-                episode: 1 // First episode
-            };
-        }
-        // CHECKS if current episode was the first episode in the season
-        if (conf.episode < 1) {
-            // CHECKS if current season wasn't the first season
-            if (conf.season > 1) {
-                var prevSeason = data.seasons[conf.season - 2];
-                d.episodes.prev = {
-                    thumb: prevSeason.thumb,
-                    url: prevSeason.episodes[prevSeason.episodes.length - 1],
-                    season: conf.season - 1,
-                    episode: prevSeason.episodes.length - 1
-                };
-            }
-        }
-    }
-    // CHECKS if current episode is not the first
-    if (conf.episode > 1) {
-        d.episodes.prev = {
-            thumb: currSeason.thumb,
-            url: currSeason.episodes[conf.episode - 2],
-            season: conf.season,
-            episode: conf.episode - 1
-        };
-    }
-    // Combined checks if episode isn't the last episode of the season
-    if (conf.episode < currSeason.episodes.length) {
-        d.episodes.next = {
-            thumb: currSeason.thumb,
-            url: currSeason.episodes[conf.episode],
-            season: conf.season,
-            episode: conf.episode + 1
-        };
-    }
-    else {
-        // Checks if there are more seasons available
-        if (conf.season < data.seasons.length - 1) {
-            d.episodes.next = {
-                thumb: data.seasons[conf.season].thumb,
-                url: data.seasons[conf.season].episodes[0],
-                season: conf.season - 1,
-                episode: 1 // First episode
-            };
-        }
-    }
-    return d;
-}
-/*====  POST  ====*/
-router.post('/:version', validateAPIVer, function (req, res, next) {
-    var title = req.body.title || null;
-    var mediatype = req.body.type;
-    // Check if title exists
-    if (!title) {
-        printError({
-            title: "POST ERROR",
-            message: "Missing title!",
-            statusCode: 400
-        }, res);
-        return;
-    }
-    // Check if mediatype exists
-    // Uses mediatype to identify if the data is for a movie or tv-show
-    if (!mediatype) {
-        printError({
-            title: "POST ERROR",
-            message: "Missing key 'type'!",
-            statusCode: 400
-        }, res);
-        return;
-    }
-    var videosConverter = new VideosConverter(req.body);
-    videosConverter.getData(function (err, data) {
-        res.json(data);
-    });
-});
-/**
- *  @params:    (string)    id          Videoid
- *              (array)     seasons     Array where each elementvalue is the episode numbers,
- *                                      and indexnumber+1 is the seasons
- *              (string)    filetype    The filetype for the files
- *
- *  @desc:      Iterates over each season.
- *                  1.  Sets the thumbimg value
- *                  2.  Iterates over each episode in each season and sets the filename
- *
- *  @return:    (array)     List with each season, and the episodes and thumbimg to follow
- * */
-function setSeasons(id, seasons, filetype) {
-    var _r = [];
-    seasons.forEach(function (epCount, idx) {
-        var season = idx + 1;
-        var _thumb = "/small/" + id + "_thumb" + season + ".jpg";
-        var episodes = [];
-        var title = "";
-        epCount = parseInt(epCount);
-        for (var i = 1; i <= epCount; i++) {
-            title = id + "_s";
-            if (season < 10) {
-                title += "0" + season;
+            else if (!shows) {
+                _r = movies;
             }
             else {
-                title += season;
+                _r = { movies: movies, tvshows: shows };
             }
-            title += "e";
-            if (i < 10) {
-                title += "0" + i;
-            }
-            else {
-                title += i;
-            }
-            title += "." + filetype;
-            episodes.push("/tv-shows/" + id + "/season_" + season + "/" + title);
-        }
-        _r.push({
-            thumb: _thumb,
-            episodes: episodes
+            res.status(200);
+            return res.json(_r);
         });
     });
-    return _r;
-}
-/**
- *  @param: (string)    id
- *          (string)    filetype    The filetype to the video
- *
- * */
-function createMovieUrl(id, filetype) {
-    var url = "/movies/" + id + "/" + id + "." + filetype;
-    return url;
-}
-function convertToID(title) {
-    var r = "";
-    title = title.toLowerCase();
-    for (var i = 0; i <= title.length; i++) {
-        if (title.substring(i - 1, i) == " ") {
-            r += "_";
+});
+// GET /api/v1/:vidID
+router.get('/:vidID', function (req, res, next) {
+    var vidID = req.params.vidID;
+    var sort = { title: -1 }; // The default sorting sequence
+    // First search in Movie
+    getDataFromScheema(Movie, { sort: sort, query: { vidID: vidID } }, function (err, mov) {
+        if (err) {
+            return printError(err, res);
+        }
+        if (mov.length > 0) {
+            return res.json(mov[0]);
         }
         else {
-            r += title.substring(i - 1, i);
+            getDataFromScheema(TVShow, { sort: sort, query: { vidID: vidID } }, function (err, show) {
+                if (show.length > 0) {
+                    return res.json(show[0]);
+                }
+                else {
+                    var searchErr = new Error("Could not find video " + vidID);
+                    searchErr.status = 404;
+                    searchErr.api = true;
+                    return next(searchErr);
+                }
+            });
         }
-    }
-    return r;
-}
-/**
- * @desc: Connects to the database
- * */
-function mongoConnect(url, res, callback) {
-    MongoClient.connect(url, function (err, db) {
+    });
+});
+router.get('/:vidID/:season', function (req, res) {
+    var vidID = req.params.vidID;
+    var season = req.params.season;
+    TVShow.find({ vidID: vidID }, function (err, show) {
         if (err) {
-            printError({
-                title: "Connection ERROR",
-                message: err,
-                statusCode: 400
+            // @TODO:ffl - replace printError() with real 'new Error()'
+            return printError({
+                title: "MEDIA LOADING ERROR",
+                message: "Could not get TV-show from database",
+                statusCode: 500
             }, res);
-            return;
         }
-        callback(err, db);
+        MediaParser.printableSeason(show[0], { season: season }, function (err, printable) {
+            if (err) {
+                // @TODO:ffl - replace printError() with real 'new Error()'
+                return printError(err, res);
+            }
+            res.json(printable);
+            return;
+        });
+    });
+});
+router.get('/:vidID/:season/:episode', function (req, res, next) {
+    var vidID = req.params.vidID;
+    var season = req.params.season;
+    var episode = req.params.episode;
+    TVShow.findOne({ vidID: vidID }, function (err, show) {
+        if (err) {
+            return next(err);
+        }
+        if (!show) {
+            var searchErr = new Error("Could not find tv-show: " + vidID);
+            searchErr.status = 404;
+            return next(searchErr);
+        }
+        MediaParser.printableEpisodes(show, {
+            season: season,
+            episode: episode
+        }, function (err1, printable) {
+            if (err1) {
+                // @TODO:ffl - replace printError() with real 'new Error()'
+                return printError(err1, res);
+            }
+            return res.json(printable);
+        });
+    });
+});
+router.post('/', function (req, res, next) {
+    var type = req.body.type;
+    if (!req.body.type || !req.body.title) {
+        // @TODO:ffl - replace printError() with real 'new Error()'
+        return printError({
+            title: "MISSING REQUIRED DATA IN POST BODY",
+            message: "Both type and title are required fields",
+            statusCode: 400
+        }, res);
+    }
+    if (type == "movie") {
+        // Convert thumb to object
+        var thumb;
+        try {
+            thumb = JSON.parse(req.body.thumb);
+        }
+        catch (e) {
+            thumb = {};
+        }
+        Movie.create({
+            title: req.body.title,
+            thumb: thumb,
+            type: type,
+            url: req.body.url,
+            rating: req.body.rating,
+            viewcount: req.body.viewcount || 0,
+            details: req.body.details,
+            genre: req.body.genre.trim().split(','),
+            released: new Date(req.body.released)
+        }, function (saveErr, m) {
+            if (saveErr) {
+                return printError({
+                    title: "MEDIA UPLOAD ERROR",
+                    message: saveErr.message,
+                    statusCode: saveErr.status
+                }, res);
+            }
+            res.status = 200;
+            res.json(m);
+        });
+    }
+    else if (type == "tv-show") {
+        var thumb;
+        try {
+            thumb = JSON.parse(req.body.thumb);
+        }
+        catch (e) {
+            thumb = {};
+        }
+        var seasons = setSeason(req.body, MediaParser.createVidID(req.body.title));
+        if (!seasons) {
+            var seasonParseError = new Error("[SEASON PARSE ERROR] One of the input fields is missing or wrongly formatted");
+            seasonParseError.status = 400;
+            return next(seasonParseError);
+        }
+        TVShow.create({
+            title: req.body.title,
+            thumb: thumb,
+            type: type,
+            seasons: seasons,
+            rating: req.body.rating,
+            viewcount: req.body.viewcount,
+            details: req.body.details,
+            genre: req.body.genre.trim().split(",") || [],
+            released: new Date(req.body.released)
+        }, function (saveErr, tv) {
+            if (saveErr) {
+                // @TODO:ffl - replace printError() with real 'new Error()'
+                return printError({
+                    title: "DATA UPLOAD ERROR",
+                    message: saveErr.message,
+                    statusCode: saveErr.status
+                }, res);
+            }
+            res.status = 200;
+            res.json(tv);
+        });
+    }
+});
+router.put('/:vidID/addview', function (req, res) {
+    var vidID = req.params.vidID;
+    findMedia(vidID, function (err, data) {
+        if (err) {
+            return null;
+        }
+        switch (data.type) {
+            case "tv-show":
+                TVShow.findOneAndUpdate({ vidID: vidID }, { viewcount: data.viewcount + 1 }, function (updateErr, media) {
+                    if (updateErr) {
+                        // @TODO:ffl - replace printError() with real 'new Error()'
+                        return printError({
+                            title: "VIEWCOUNT INCREMENTATION ERROR",
+                            message: "Incrementation of tv-show " + vidID + " could not be completed",
+                            statusCode: 500
+                        }, res);
+                    }
+                    return res.json(media);
+                });
+                break;
+            case "movie":
+                Movie.findOneAndUpdate({ vidID: vidID }, { viewcount: data.viewcount + 1 }, function (updateErr, media) {
+                    if (updateErr) {
+                        // @TODO:ffl - replace printError() with real 'new Error()'
+                        return printError({
+                            title: "VIEWCOUNT INCREMENTATION ERROR",
+                            message: "Incrementation of movie " + vidID + "could not be completed",
+                            statusCode: 500
+                        }, res);
+                    }
+                    return res.json(media);
+                });
+                break;
+            default:
+                // @TODO:ffl - replace printError() with real 'new Error()'
+                return printError({
+                    title: "UNSUPPORTED MEDIATYPE",
+                    message: "The mediatype: " + data.type + " in video: " + data.vidID + " is not supported",
+                    statusCode: 400
+                }, res);
+        }
+    });
+});
+router.put('/:vidID/change/:property/to/:value', function (req, res) {
+    var vidID = req.params.vidID;
+    var property = req.params.property;
+    var value = req.params.value;
+    updateMedia({ vidID: vidID, key: property, value: value }, function (err, media) {
+        if (err) {
+            return printError(err, res);
+        }
+        return res.json(media);
+    });
+});
+function updateMedia(options, callback) {
+    if (typeof options.key == "undefined") {
+        return callback({ title: "MISSING PROPERTY", message: "The key property is missing", statusCode: 400 }, null);
+    }
+    if (typeof options.value == "undefined") {
+        return callback({ title: "MISSING PROPERTY", message: "The value property is missing", statusCode: 400 }, null);
+    }
+    if (typeof options.vidID == "undefined") {
+        return callback({ title: "MISSING PROPERTY", message: "The vidID property is missing", statusCode: 400 }, null);
+    }
+    findMediaType(options.vidID, function (err, type) {
+        if (err) {
+            return callback(err, null);
+        }
+        var propertiesToUpdate = {};
+        propertiesToUpdate[options.key] = options.value;
+        /*
+         * If the property is 'title', then the vidID has to be updated
+         * */
+        if (options.key == "title") {
+            propertiesToUpdate.vidID = MediaParser.createVidID(options.value);
+        }
+        switch (type) {
+            case 'tv-show':
+                TVShow.findOneAndUpdate({}, propertiesToUpdate, function (updateErr, media) {
+                    if (updateErr) {
+                        return callback({ title: updateErr }, null);
+                    }
+                    return callback(null, media);
+                });
+                break;
+            case 'movie':
+                Movie.findOneAndUpdate({}, propertiesToUpdate, function (updateErr, media) {
+                    if (updateErr) {
+                        return callback({ title: updateErr }, null);
+                    }
+                    return callback(null, media);
+                });
+                break;
+            default:
+                return callback({ title: "UNSUPPORTED MEDIATYPE", message: "The mediatype '" + type + "', in '" + options.vidID + "' is not supported" }, null);
+        }
     });
 }
-/** Middlefunction which handles validation of the parameters
- *
- * */
-function validateAPIVer(req, res, next) {
-    var api = req.params.version;
-    var errorMsg = {
-        title: "API-version ERROR",
-        message: "Something was wrong with the API-version",
-        statusCode: 400
-    };
-    if (typeof api != "undefined") {
-        // Validate API-version
-        api = findAPIVersion(api, apiVersions);
-        if (api == null) {
-            errorMsg.message = "The API-version provided in the URL, is not valid!";
-            printError(errorMsg, res);
-            return;
+function findMediaType(vidID, callback) {
+    findMedia(vidID, function (err, media) {
+        console.log("1. FINDING MEDIA");
+        if (err) {
+            return callback(err, null);
         }
+        console.log("2. FINDING MEDIATYPE");
+        if (typeof media.type == "undefined") {
+            return callback({ title: "MISSING PROPERTY", message: "Missing property 'type'", statusCode: 500 }, null);
+        }
+        return callback(null, media.type);
+    });
+}
+function findMedia(vidID, callback) {
+    TVShow.find({ vidID: vidID }, function (err, show) {
+        if (err) {
+            return callback({ title: err, statusCode: 500 }, null);
+        }
+        if (show.length > 0 || Object.keys(show).length > 0) {
+            return callback(null, show[0]);
+        }
+        else {
+            Movie.find({ vidID: vidID }, function (err1, movie) {
+                if (err1) {
+                    return callback({ title: err, statusCode: 500 }, null);
+                }
+                if (movie.length > 0 || Object.keys(movie).length > 0) {
+                    return callback(null, movie[0]);
+                }
+                else {
+                    return callback({
+                        title: "DATA COLLECTION ERROR",
+                        message: "Could not find any tv-show or movie with vidID of " + vidID,
+                        statusCode: 400
+                    }, null);
+                }
+            });
+        }
+    });
+}
+function setSeason(body, vidID) {
+    if (!body.seasons) {
+        var seasonErr = new Error("Season field is required!");
+        seasonErr.status = 400;
+        return seasonErr;
+    }
+    var seasons = body.seasons.trim().split(",");
+    var _s = [];
+    seasons.forEach(function (val, key) {
+        var epNum = parseInt(val);
+        var buffer = {};
+        buffer.thumb = MediaParser.createThumbURL(vidID, "small", ".j");
+        buffer.thumb = buffer.thumb.substring(0, buffer.thumb.length - ".j".length) + (key + 1) + ".jpg";
+        buffer.episodes = [];
+        for (var i = 0; i < val; i++) {
+            buffer.episodes.push(MediaParser.createVidUrl(vidID, "tv-show", { season: key + 1, episode: i + 1 }));
+        }
+        _s.push(buffer);
+    });
+    return _s;
+}
+/**
+ *  @param: (MongoObject)   Scheema     The mongodb Scheema to collect data from
+ *          (Object)        conf        Different configuration data, like sorting, etc
+ *              (Boolean)       conf.skip   If the user want's to skip collection of data from the specified scheema.
+ *                                          he can set skip to true
+ *
+ *  @desc:  Uses the provided scheema and conf data, to get data from MongoDB.
+ *  @return: (Function)     Callback    Callback method with data from the scheema, and evt. errors
+ * */
+function getDataFromScheema(Scheema, conf, callback) {
+    // Check if user wants to skip query
+    if (!conf.skip) {
+        // Get data from MongoDB
+        Scheema.find(conf.query || {}, // QUERY
+        { _id: false, __v: false } // FILTER OUT FIELDS
+        ).sort(conf.sort || {}) // SORTING
+            .exec(function (err, data) {
+            if (err) {
+                // @TODO:ffl - replace printError() with real 'new Error()'
+                return callback({ title: "DATA COLLECTION ERROR", message: err, statusCode: 500 });
+            }
+            return callback(null, data);
+        });
     }
     else {
-        errorMsg.message = "Missing API_version!";
-        printError(errorMsg, res);
-        return;
+        return callback(null, null);
     }
-    next();
 }
 /**
- *  @param: (string)    v           The provided API version
- *          (array)     versions    List of the valid API
- *  @desc: Iterates over the existing API versions, and compares it with the provided API version
- *  @return: (string) API version IF found, null if not
- * */
-function findAPIVersion(v, versions) {
-    var _ver = null;
-    // TODO: implement version shortening with preservation of the numbers
-    // Iterate over API-versions
-    versions.forEach(function (ver) {
-        if (v == ver) {
-            _ver = v;
-        }
-    });
-    return _ver;
-}
-/**
- *
+ *  @param:     [Object]    options     Includes the elements of the error message
+ *                                          * title: The title of the error
+ *                                          * message: The error message
+ *                                          * statusCode: the http statusCode
+ *              [Object]       res      The response object
+ *  @desc:      Is responsible for handling and print out the error message
+ *  @return:    void
  * */
 function printError(options, res) {
     var errorMsg = {
         title: (options.title == "" ? "Error" : options.title),
         message: (options.message || "Error in server"),
-        statusCode: (options.statusCode || 400)
+        statusCode: (options.statusCode || 500)
     };
     res.setHeader('content-type', 'application/json');
     res.status(options.statusCode);

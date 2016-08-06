@@ -1,23 +1,22 @@
 extends layout
 block styles
    link(rel="stylesheet", href="/stylesheets/details.css")
-block header
-
+block title-area
+   strong(class="page-sepparator glyphicon glyphicon-menu-right")
+   a(class="video-anchor", href="/videos", style="margin-left:1%;") video
 
 block content
    div(class='cover-img-container')
-      img(class="cover-img", src="/res/thumb/"+video.thumb.large)
+      img(class="cover-img blur", src="/res/thumb/"+video.thumb.large)
       h2(class='sub-title vid-title')=video.title
 
    table(class='statistics')
       tr
-         td( class='stat-clm', id='stat-genre',
-         style='font-size: 0.7em; word-wrap: break-word; width: 40%;')
-
+         td( class='stat-clm', id='stat-genre')
             if typeof video.genre != "undefined"
                strong=video.genre.join(", ")
-         td( class='stat-clm', id='stat-rating',
-         style='text-align: center')
+         td(class='stat-clm', id='stat-rating',
+            style='text-align: center')
 
             img(src='/images/imdb_flat.png', class='stat-rating-ico')
             em &nbsp #{video.rating}
@@ -26,7 +25,7 @@ block content
          style='text-align: right; padding-left: 0; padding-right: 3%;')
 
             i(  class='glyphicon glyphicon-eye-open',
-            style='font-size: 0.8em;')
+               style='font-size: 0.8em;')
             em &nbsp #{video.viewcount}
 
    p(class='details')=video.details

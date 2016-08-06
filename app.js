@@ -4,14 +4,43 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
+// Session handlers
+var session = require('express-session');
+var MongoStore = require('connect-mongo')(session);
+// ODM
 var mongoose = require('mongoose');
-var passport = require('passport');
-var LocalStrategy = require('passport-local').Strategy;
 
-var routes = require('./routes/index');
 
+// Initialize express
 var app = express();
+
+// MIDDLEWARE
+var midApi = require('./middleware/api');
+var midAuth = require('./middleware/authentication');
+var mid = require('./middleware');
+
+// Connect to database
+mongoose.connect('mongodb://localhost:27017/PiMediaServer');
+var db = mongoose.connection;
+db.on('error', console.error.bind('console', 'connection error'));
+
+
+// Initialize session
+app.use(
+    session({
+      secret: 'horse board underdog_fiat klapp',
+      resave: false,
+      saveUninitialized: false,
+      store: new MongoStore({ // Store the session in the database
+        mongooseConnection: db
+      })
+}));
+
+// Make UserID available in template
+app.use(function(req, res, next){
+  res.locals.currentUser = req.session.uid;
+  next();
+});
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -23,44 +52,21 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(require('express-session')({
-  secret: 'keyboard cat',
-  resave: false,
-  saveUninitialized: false
-}));
-app.use(passport.initialize());
-app.use(passport.session());
+
+// STATIC FOLDER
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-var User = require('./models/user.js'); // Get the User model
-passport.use(new LocalStrategy(User.authenticate()) );
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+// Define routers
+app.use(mid.placeConfigInReq);
+app.use('/', require('./routes/index'));
+app.use('/api/v1', midApi.sorting, midApi.filterMediatype, require('./routes/api')); // Custom authentication
 
-mongoose.connect('mongodb://localhost:27017/PiMediaServer');
-
-
-app.use('/', routes); // Don't need to be authenticated
-app.use('/api', require('./routes/api')); // Custom authentication
-app.use(userValidation);
-app.use('/videos', require('./routes/videos')); // Needs authentication
+// NEEDS AUTHENTICATION
+app.use(midAuth.requiresLogin);
+app.use('/videos', require('./routes/videos'));
 app.use('/user', require('./routes/user'));
-
-/**
- * @desc: Handles user validation. on every before request
- *
- * */
-function userValidation(req, res, next){
-  if(req.user){
-    console.log("USER "+req.user.username+" FOUND\n");
-    return next();
-  }
-
-  console.log("COULD NOT FIND USER\n");
-  return next();
-  //return res.redirect("/");
-}
+app.use('/modify', require('./routes/modify'));
 
 
 // catch 404 and forward to error handler
@@ -74,7 +80,7 @@ app.use(function(req, res, next) {
 
 // development error handler
 // will print stacktrace
-if (app.get('env') === 'development') {
+/*if (app.get('env') === 'development') {
   app.use(function(err, req, res, next) {
     res.status(err.status || 500);
     res.render('error', {
@@ -82,7 +88,7 @@ if (app.get('env') === 'development') {
       error: err
     });
   });
-}
+}*/
 
 // production error handler
 // no stacktraces leaked to user

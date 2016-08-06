@@ -1,81 +1,112 @@
 var express = require('express');
 var router = express.Router();
+var midAuth = require('../middleware/authentication');
 
-var passport = require('passport');
 var User = require('../models/user');
 
 
-/* GET home page. */
+// GET /
 router.get('/', function(req, res, next) {
-  console.log("HOME PAGE");
+  console.log(req.originalUrl);
   res.render('index',
       {
-        title: 'PiServer',
-        pages: {
-          images: {
-            url: '/images',
-            name: 'Bilete',
-            tmb_name: 'spongebob.jpg'
-          },
-          videos: {
-            url: '/videos',
-            name: 'Video',
-            tmb_name: 'DSC_0786.JPG'
-          }
+        videos: {
+          url: '/videos',
+          name: 'Video',
+          tmb_name: 'DSC_0786.JPG'
         },
         user: req.user
       });
 });
 
-
-router.get('/register', function(req, res){
+// GET /register
+router.get('/register', midAuth.loggedOut, function(req, res){
   res.render('register', {});
 });
 
+// POST /register
+router.post('/register', function(req, res, next){
+  if( !req.body.password ||
+      !req.body.confirmPassword ||
+      !req.body.email ||
+      !req.body.firstname ||
+      !req.body.lastname){
 
-/** REGISTER NEW USER
- *
- * */
-router.post('/register', function(req, res){
-  User.register( new User({username: req.body.username}), req.body.password, function(err, user){
-    if(err){
-      return res.render('register', {user:user});
+    var registerErr = new Error("All input fields are required");
+    registerErr.status = 400;
+    return next(registerErr);
+  }
+
+  if(req.body.password !== req.body.confirmPassword){
+    var pwdMatchErr = new Error("Password fields do not match");
+    pwdMatchErr.status = 400;
+    return next(pwdMatchErr);
+  }
+
+  var userData = {
+    email: req.body.email,
+    firstName: req.body.firstname,
+    lastName: req.body.lastname,
+    password: req.body.password
+  };
+
+  User.create(userData, function(registerErr, user){
+    if(registerErr){
+      return next(registerErr);
     }
 
-    // AUTHENTICATE AND LOGIN
-    passport.authenticate('local')(req, res, function(){
-      req.session.save(function(err){ // Save to session
-        if(err){
-          return next(err);
-        }
-        res.redirect('/');
-      });
-
-    });
+    req.session.uid = user._id;
+    return res.redirect('/videos');
   });
+
 });
 
-router.get('/login', function(req, res){
+// GET /login
+router.get('/login', midAuth.loggedOut, function(req, res){
   res.render('login', {user: req.user});
 });
 
-router.post('/login', passport.authenticate('local'), function(req, res){
+// POST /login
+router.post('/login', function(req, res, next){
+  if(!req.body.email || !req.body.password){
+    var error = new Error("Both email and password are required fields");
+    error.status = 400;
+    return next(error);
+  }
 
-  req.session.save(function(err){
-    if(err){
-      return err;
+  // Authenticate the user
+  User.authenticate(req.body.email, req.body.password, function(authErr, user){
+    if(authErr || !user){
+                        // Never specify which field is incorrectly typed
+      var err = new Error("Wrong email or password");
+      err.status = 401;
+      return next(err);
     }
 
-    res.redirect('/');
+    // add the user id to the session
+    /*
+     * Ved å bere lagre BrukarID i session. sparar vi oss for å overbelaste serverens RAM.
+     * Samt du slepp å tenke på å måtte konstant oppdatere informasjonen som ligg i session. Vi hentar bere dette frå databasen
+     * */
+    req.session.uid = user._id;
+    return res.redirect('/videos');
   });
 
 });
 
-router.get('/logout', function(req, res){
-  req.logout();
+// GET /logout
+router.get('/logout', midAuth.requiresLogin, function(req, res){
+  if(req.session){
+    req.session.destroy(function(err){
+      if(err){
+        return next(err);
+      }
+    });
+  }
   res.redirect('/');
 });
 
+// GET /pint
 router.get('/ping', function(req, res){
   res.status(200).send('pong!');
 });

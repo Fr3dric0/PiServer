@@ -1,0 +1,13 @@
+div(class='header')
+   div.title-container
+      img.title-img(src="/images/raspberrypi_ico.png")
+      a(href="/")
+         h1(class='title')=title
+      block title-area
+   div.user-container()
+      if(currentUser)
+         a.btn.btn-logout(href="/logout") Logg ut
+      else
+         a.btnauth(href="/register")
+            button.btn.btn-register Register
+   block header
