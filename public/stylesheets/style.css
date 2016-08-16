@@ -108,15 +108,16 @@ body{
     top: 0;
     float: right;
     padding-right: 0;
+    margin: 0;
 }
 
+/*
 .btnauth{
     color: #efefef;
     font-weight: 800;
     float: right;
     white-space: nowrap;
-}
-
+}*/
 .profileimg-container{
     background-color: #398439;
     position: relative;
@@ -257,8 +258,6 @@ body{
 }
 
 
-
-
 .btn{
     position: relative;
     float: right;
@@ -309,10 +308,6 @@ body{
 .btn-logout{
     background-color: #FFF;
     color: #8C1C2F;
-    font-weight: 800;
-    float: right;
-    margin-right: 0;
-    border-radius: 0;
 }
 
 .btn-logout:hover{
@@ -333,19 +328,9 @@ body{
     padding-right: 2.0em;
 }
 
-
 .btn-register{
     color: #0D5D7F;
     background-color: #FFF;
-    border-radius: 0;
-    font-weight: 400;
-    font-size: 1.1em;
-    margin-right: 0;
-    padding: 0;
-    height: 30px;
-    padding-left: 0.8em;
-    padding-right: 0.8em;
-    font-weight: 800;
 }
 
 .btn-register:hover{
@@ -353,6 +338,56 @@ body{
     color: #FFF;
 }
 
+.btn-user{
+    position: relative;
+    background-color: #FFF;
+    color: #078C6B;
+}
+
+.btn-user:hover{
+    background-color: #078C6B;
+    color: #FFF;
+}
+
+.btn-list{
+    position: relative;
+    float: right;
+    list-style:none;
+    display: inline-block;
+    white-space:nowrap;
+    top: 0;
+    padding: 0;
+    height: 45px;
+}
+
+.btn-list li{
+    position: relative;
+    display: inline;
+    padding: 0;
+    margin: 0;
+    height: 100%;
+}
+
+.btn-header{
+    position: relative;
+    padding: 0;
+    padding-left: 0.8em;
+    padding-right: 0.8em;
+    padding-top: 8px;
+    padding-bottom: 10px;
+
+    font-size: 1.1em;
+    font-weight: 800;
+
+    margin: 0;
+    top: 0;
+    height: 100%;
+}
+
+
+.btn-header:hover{
+    text-decoration: none;
+}
 
 .ingress{
     text-align: center;
@@ -378,9 +413,7 @@ body{
     }
 
     .btn-logout{
-        float: right;
         margin-right: 0;
-        border-radius: 0;
     }
 
     .btn-primary{
@@ -390,13 +423,12 @@ body{
 
 
     .btn-register{
-        margin: 0;
     }
 
     .user-container{
+        position: relative;
         top: 0;
-        width: 20%;
-        font-size: 0.9em;
+        margin: 0;
     }
 
     .btn-hyperlink{

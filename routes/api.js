@@ -11,10 +11,12 @@ var request = require('request');
 var Movie = require('../models/movie');
 var TVShow = require('../models/tvshow');
 var MediaParser = require('../models/parser/mediaparser');
-var sort_order = { "title": 1 };
+// CONSTANTS
+var SORT_ORDER = { "title": 1 };
+var TYPE = { MOVIE: "movie", TVSHOW: "tv-show" };
 // GET /api/v1/
 router.get('/', function (req, res) {
-    var sorting = req.sorting || sort_order;
+    var sorting = req.sorting || SORT_ORDER;
     // GET MOVIES
     getDataFromScheema(Movie, { sort: sorting, skip: req.skipping.movie }, function (err, movies) {
         if (err) {
@@ -109,8 +111,7 @@ router.get('/:vidID/:season/:episode', function (req, res, next) {
             episode: episode
         }, function (err1, printable) {
             if (err1) {
-                // @TODO:ffl - replace printError() with real 'new Error()'
-                return printError(err1, res);
+                return next(err1);
             }
             return res.json(printable);
         });
@@ -119,14 +120,11 @@ router.get('/:vidID/:season/:episode', function (req, res, next) {
 router.post('/', function (req, res, next) {
     var type = req.body.type;
     if (!req.body.type || !req.body.title) {
-        // @TODO:ffl - replace printError() with real 'new Error()'
-        return printError({
-            title: "MISSING REQUIRED DATA IN POST BODY",
-            message: "Both type and title are required fields",
-            statusCode: 400
-        }, res);
+        var err = new Error("Missing fields ´title´ and ´type´ in POST-body");
+        err.status = 400;
+        return next(err);
     }
-    if (type == "movie") {
+    if (type == TYPE.MOVIE) {
         // Convert thumb to object
         var thumb;
         try {
@@ -147,17 +145,13 @@ router.post('/', function (req, res, next) {
             released: new Date(req.body.released)
         }, function (saveErr, m) {
             if (saveErr) {
-                return printError({
-                    title: "MEDIA UPLOAD ERROR",
-                    message: saveErr.message,
-                    statusCode: saveErr.status
-                }, res);
+                return next(saveErr);
             }
             res.status = 200;
             res.json(m);
         });
     }
-    else if (type == "tv-show") {
+    else if (type == TYPE.TVSHOW) {
         var thumb;
         try {
             thumb = JSON.parse(req.body.thumb);
@@ -183,12 +177,7 @@ router.post('/', function (req, res, next) {
             released: new Date(req.body.released)
         }, function (saveErr, tv) {
             if (saveErr) {
-                // @TODO:ffl - replace printError() with real 'new Error()'
-                return printError({
-                    title: "DATA UPLOAD ERROR",
-                    message: saveErr.message,
-                    statusCode: saveErr.status
-                }, res);
+                return next(saveErr);
             }
             res.status = 200;
             res.json(tv);
@@ -202,7 +191,7 @@ router.put('/:vidID/addview', function (req, res) {
             return null;
         }
         switch (data.type) {
-            case "tv-show":
+            case TYPE.TVSHOW:
                 TVShow.findOneAndUpdate({ vidID: vidID }, { viewcount: data.viewcount + 1 }, function (updateErr, media) {
                     if (updateErr) {
                         // @TODO:ffl - replace printError() with real 'new Error()'
@@ -215,7 +204,7 @@ router.put('/:vidID/addview', function (req, res) {
                     return res.json(media);
                 });
                 break;
-            case "movie":
+            case TYPE.MOVIE:
                 Movie.findOneAndUpdate({ vidID: vidID }, { viewcount: data.viewcount + 1 }, function (updateErr, media) {
                     if (updateErr) {
                         // @TODO:ffl - replace printError() with real 'new Error()'
@@ -238,26 +227,32 @@ router.put('/:vidID/addview', function (req, res) {
         }
     });
 });
-router.put('/:vidID/change/:property/to/:value', function (req, res) {
+router.put('/:vidID/change/:property/to/:value', function (req, res, next) {
     var vidID = req.params.vidID;
     var property = req.params.property;
     var value = req.params.value;
     updateMedia({ vidID: vidID, key: property, value: value }, function (err, media) {
         if (err) {
-            return printError(err, res);
+            return next(err);
         }
         return res.json(media);
     });
 });
 function updateMedia(options, callback) {
     if (typeof options.key == "undefined") {
-        return callback({ title: "MISSING PROPERTY", message: "The key property is missing", statusCode: 400 }, null);
+        var err = new Error("The ´key´ in the object is missing");
+        err.status = 400;
+        return callback(err);
     }
     if (typeof options.value == "undefined") {
-        return callback({ title: "MISSING PROPERTY", message: "The value property is missing", statusCode: 400 }, null);
+        var err = new Error("The ´value´ in the object is missing");
+        err.status = 400;
+        return callback(err);
     }
     if (typeof options.vidID == "undefined") {
-        return callback({ title: "MISSING PROPERTY", message: "The vidID property is missing", statusCode: 400 }, null);
+        var err = new Error("The vidID value is missing");
+        err.status = 400;
+        return callback(err);
     }
     findMediaType(options.vidID, function (err, type) {
         if (err) {
@@ -272,24 +267,26 @@ function updateMedia(options, callback) {
             propertiesToUpdate.vidID = MediaParser.createVidID(options.value);
         }
         switch (type) {
-            case 'tv-show':
+            case TYPE.TVSHOW:
                 TVShow.findOneAndUpdate({}, propertiesToUpdate, function (updateErr, media) {
                     if (updateErr) {
-                        return callback({ title: updateErr }, null);
+                        return callback(updateErr, null);
                     }
                     return callback(null, media);
                 });
                 break;
-            case 'movie':
+            case TYPE.MOVIE:
                 Movie.findOneAndUpdate({}, propertiesToUpdate, function (updateErr, media) {
                     if (updateErr) {
-                        return callback({ title: updateErr }, null);
+                        return callback(updateErr, null);
                     }
                     return callback(null, media);
                 });
                 break;
             default:
-                return callback({ title: "UNSUPPORTED MEDIATYPE", message: "The mediatype '" + type + "', in '" + options.vidID + "' is not supported" }, null);
+                var err = new Error("The mediatype ´" + type + "´ is not supported in this application");
+                err.status = 400;
+                return callback(err);
         }
     });
 }
@@ -348,7 +345,7 @@ function setSeason(body, vidID) {
         buffer.thumb = buffer.thumb.substring(0, buffer.thumb.length - ".j".length) + (key + 1) + ".jpg";
         buffer.episodes = [];
         for (var i = 0; i < val; i++) {
-            buffer.episodes.push(MediaParser.createVidUrl(vidID, "tv-show", { season: key + 1, episode: i + 1 }));
+            buffer.episodes.push(MediaParser.createVidUrl(vidID, TYPE.TVSHOW, { season: key + 1, episode: i + 1 }));
         }
         _s.push(buffer);
     });

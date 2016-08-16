@@ -12,12 +12,14 @@ var Movie = require('../models/movie');
 var TVShow = require('../models/tvshow');
 var MediaParser = require('../models/parser/mediaparser');
 
-let sort_order = {"title": 1};
+// CONSTANTS
+var SORT_ORDER = {"title": 1};
+var TYPE = {MOVIE: "movie", TVSHOW: "tv-show"};
 
 // GET /api/v1/
 router.get('/', function(req, res) {
 
-    var sorting = req.sorting || sort_order;
+    var sorting = req.sorting || SORT_ORDER;
 
     // GET MOVIES
     getDataFromScheema(Movie, { sort: sorting, skip: req.skipping.movie}, (err, movies) => {
@@ -139,8 +141,7 @@ router.get('/:vidID/:season/:episode', (req, res, next) => {
             episode:episode
         }, (err1, printable) => {
             if(err1){
-                // @TODO:ffl - replace printError() with real 'new Error()'
-                return printError(err1, res);
+                return next(err1);
             }
 
             return res.json(printable);
@@ -155,15 +156,12 @@ router.post('/', (req, res, next) => {
     var type = req.body.type;
 
     if(!req.body.type || !req.body.title){
-        // @TODO:ffl - replace printError() with real 'new Error()'
-        return printError({
-            title: "MISSING REQUIRED DATA IN POST BODY",
-            message: "Both type and title are required fields",
-            statusCode: 400
-        }, res);
+        var err = new Error("Missing fields ´title´ and ´type´ in POST-body");
+        err.status = 400;
+        return next(err);
     }
 
-    if(type == "movie"){
+    if(type == TYPE.MOVIE){
         // Convert thumb to object
         var thumb;
         try{
@@ -183,20 +181,15 @@ router.post('/', (req, res, next) => {
             genre: req.body.genre.trim().split(','),
             released: new Date(req.body.released)
         }, (saveErr, m)=>{
-
-            if(saveErr){
-                return printError({
-                    title: "MEDIA UPLOAD ERROR",
-                    message: saveErr.message,
-                    statusCode: saveErr.status
-                }, res);
+            if(saveErr) {
+                return next(saveErr);
             }
 
             res.status = 200;
             res.json(m);
         });
 
-    }else if(type == "tv-show"){
+    }else if(type == TYPE.TVSHOW){
         var thumb;
         try{
             thumb = JSON.parse(req.body.thumb);
@@ -225,12 +218,7 @@ router.post('/', (req, res, next) => {
 
         }, (saveErr, tv) => {
             if(saveErr){
-                // @TODO:ffl - replace printError() with real 'new Error()'
-                return printError({
-                    title: "DATA UPLOAD ERROR",
-                    message: saveErr.message,
-                    statusCode: saveErr.status
-                }, res);
+                return next(saveErr);
             }
 
             res.status = 200;
@@ -252,7 +240,7 @@ router.put('/:vidID/addview', (req, res) => {
         }
 
         switch(data.type){
-            case "tv-show":
+            case TYPE.TVSHOW:
                 TVShow.findOneAndUpdate({vidID: vidID}, {viewcount: data.viewcount + 1}, (updateErr, media) => {
                     if(updateErr){
                         // @TODO:ffl - replace printError() with real 'new Error()'
@@ -266,7 +254,7 @@ router.put('/:vidID/addview', (req, res) => {
                     return res.json(media);
                 });
                 break;
-            case "movie":
+            case TYPE.MOVIE:
                 Movie.findOneAndUpdate({vidID: vidID}, {viewcount: data.viewcount + 1}, (updateErr, media) => {
                     if(updateErr){
                         // @TODO:ffl - replace printError() with real 'new Error()'
@@ -292,14 +280,14 @@ router.put('/:vidID/addview', (req, res) => {
 
 });
 
-router.put('/:vidID/change/:property/to/:value', (req, res) => {
+router.put('/:vidID/change/:property/to/:value', (req, res, next) => {
     var vidID = req.params.vidID;
     var property = req.params.property;
     var value = req.params.value;
 
     updateMedia({vidID: vidID, key: property, value: value}, (err, media) => {
         if(err){
-            return printError(err, res);
+            return next(err);
         }
 
         return res.json(media);
@@ -310,13 +298,19 @@ router.put('/:vidID/change/:property/to/:value', (req, res) => {
 
 function updateMedia(options, callback){
     if(typeof options.key == "undefined"){
-        return callback({title: "MISSING PROPERTY", message: "The key property is missing", statusCode: 400}, null);
+        var err = new Error("The ´key´ in the object is missing");
+        err.status = 400;
+        return callback(err);
     }
     if(typeof options.value == "undefined"){
-        return callback({title: "MISSING PROPERTY", message: "The value property is missing", statusCode: 400}, null);
+        var err = new Error("The ´value´ in the object is missing");
+        err.status = 400;
+        return callback(err);
     }
     if(typeof options.vidID == "undefined"){
-        return callback({title: "MISSING PROPERTY", message: "The vidID property is missing", statusCode: 400}, null);
+        var err = new Error("The vidID value is missing");
+        err.status = 400;
+        return callback(err);
     }
 
     findMediaType(options.vidID, (err, type) => {
@@ -336,24 +330,26 @@ function updateMedia(options, callback){
         }
 
         switch(type){
-            case 'tv-show':
+            case TYPE.TVSHOW:
                 TVShow.findOneAndUpdate({}, propertiesToUpdate, (updateErr, media) => {
                     if(updateErr){
-                        return callback({title: updateErr}, null);
+                        return callback(updateErr, null);
                     }
                     return callback(null, media);
                 });
                 break;
-            case 'movie':
+            case TYPE.MOVIE:
                 Movie.findOneAndUpdate({}, propertiesToUpdate, (updateErr, media) => {
                     if(updateErr){
-                        return callback({title: updateErr}, null);
+                        return callback(updateErr, null);
                     }
                     return callback(null, media);
                 });
                 break;
             default:
-                return callback({title: "UNSUPPORTED MEDIATYPE", message: "The mediatype '"+type+"', in '"+options.vidID+"' is not supported"}, null);
+                var err = new Error("The mediatype ´"+type+"´ is not supported in this application");
+                err.status = 400;
+                return callback(err);
         }
     });
 
@@ -427,7 +423,7 @@ function setSeason(body, vidID){
 
         buffer.episodes = [];
         for(var i = 0; i < val; i++){
-            buffer.episodes.push(MediaParser.createVidUrl(vidID, "tv-show", {season: key+1, episode: i+1}));
+            buffer.episodes.push(MediaParser.createVidUrl(vidID, TYPE.TVSHOW, {season: key+1, episode: i+1}));
         }
 
         _s.push(buffer);

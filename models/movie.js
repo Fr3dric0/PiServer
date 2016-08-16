@@ -48,6 +48,8 @@ MovieScheema.pre('save', function (next) {
 
 	mov.url = MediaParser.createVidUrl(mov.vidID,"movie");
 
+	console.log("=== MOVIE ===");
+
 	var conflictError = new Error("DATABASE CONFLICT ERROR: "+mov.title+", already exists!");
 	conflictError.status = 400;
 
