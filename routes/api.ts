@@ -109,7 +109,8 @@ router.get('/:vidID/:season', (req, res) => {
         MediaParser.printableSeason(show[0], {season:season}, (err, printable) => {
             if(err){
                 // @TODO:ffl - replace printError() with real 'new Error()'
-                return printError(err, res);
+
+                return next(err);
             }
 
             res.json(printable);
