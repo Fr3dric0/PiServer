@@ -54,6 +54,7 @@ function createVidUrl(vidID, type, options){
 	// If the options exists. Then we assume this is an url
 	if(options && Object.keys(options).length > 0 ){
 		url += vidID + "/";
+
 		if(!options.season){
 			throw JSON.stringify({title: "MISSING PROPERTY", message: "Property 'season' is missing in options.", statusCode: 400});
 		}
