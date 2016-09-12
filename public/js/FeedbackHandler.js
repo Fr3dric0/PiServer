@@ -61,5 +61,5 @@ var FeedbackHandler = (function () {
     FeedbackHandler.SERVER = "server";
     FeedbackHandler.SUCCESS = "success";
     return FeedbackHandler;
-})();
+}());
 //# sourceMappingURL=FeedbackHandler.js.map
