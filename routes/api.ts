@@ -63,7 +63,7 @@ router.get('/:vidID', (req, res, next) => {
     getDataFromScheema(Movie, { sort: sort, query: { vidID: vidID } }, (err, mov) => {
 
         if(err){
-            return printError(err, res);
+            return next(err);
         }
 
         if(mov.length > 0){
@@ -88,30 +88,23 @@ router.get('/:vidID', (req, res, next) => {
 
 });
 
-router.get('/:vidID/:season', (req, res) => {
+router.get('/:vidID/:season', (req, res, next) => {
     var vidID = req.params.vidID;
     var season = req.params.season;
 
 
 
     TVShow.find({vidID: vidID}, (err, show) => {
-        if(err){
-            // @TODO:ffl - replace printError() with real 'new Error()'
+        if(err){ return next(err); }
 
-            return printError({
-                title: "MEDIA LOADING ERROR",
-                message: "Could not get TV-show from database",
-                statusCode: 500
-            }, res);
+        if(!show || show.length < 1){
+            var err = new Error("Could not find tv-show: "+vidID);
+            err.status = 404;
+            return next(err);
         }
 
-
         MediaParser.printableSeason(show[0], {season:season}, (err, printable) => {
-            if(err){
-                // @TODO:ffl - replace printError() with real 'new Error()'
-
-                return next(err);
-            }
+            if(err){ return next(err); }
 
             res.json(printable);
             return;

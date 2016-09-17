@@ -197,6 +197,12 @@ function validateEpisodeNumber(media, conf){
 function createPrintableSeason(media, conf, callback){
 	var errorMsg = {title: "MEDIA PARSING ERROR", message:"", statusCode: 500};
 
+	if(!media){
+		var err = new Error("Media property is missing!");
+		err.status = 400;
+		return callback(err);
+	}
+
 	var _r = {
 		vidID: media.vidID,
 		title: media.title,
