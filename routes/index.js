@@ -95,7 +95,7 @@ router.post('/login', function(req, res, next){
 });
 
 // GET /logout
-router.get('/logout', midAuth.requiresLogin, function(req, res){
+router.get('/logout', midAuth.requiresLogin, function(req, res, next){
   if(req.session){
     req.session.destroy(function(err){
       if(err){

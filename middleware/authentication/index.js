@@ -7,7 +7,7 @@ var User = require('../../models/user');
 function requiresLogin(req, res, next){
 	if(!req.session || !req.session.uid){
 		var err = new Error("You are not authorized to view this page!");
-		err.status = 401;
+		err.status = 403;
 		return next(err);
 	}
 

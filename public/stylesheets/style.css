@@ -394,7 +394,7 @@ body{
     font-style: italic;
 }
 
-@media screen and (min-width: 1000px){
+@media screen and (min-width: 1300px){
     .container{
         width: 85%;
     }
