@@ -1,0 +1,5 @@
+<ul>
+    <li *ngFor="let l of list" [id]="'_selectId_'+l"
+        [innerHTML]="l"
+        (click)="onSelect($event)"></li>
+</ul>

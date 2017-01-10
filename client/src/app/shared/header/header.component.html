@@ -1,0 +1,15 @@
+<header>
+    <a [routerLink]="['']">
+        <div class="title-container">
+            <img class="icon" [src]="icon" alt="Raspberry pi">
+            <h1 class="title">{{title}}</h1>
+        </div>
+    </a>
+    <nav>
+        <a class="btn-nav" [routerLink]="['/media']">Videos</a>
+        <a class="btn-nav" [routerLink]="['/profile']">Profile</a>
+        <a *ngIf="authenticated" class="btn-nav btn-logout" (click)="logout()">Logout</a>
+    </nav>
+    <img class="sidenav-toggle" src="/assets/icon-menu.svg" alt="burger menu">
+</header>
+<app-sidenav></app-sidenav>

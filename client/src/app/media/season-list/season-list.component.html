@@ -1,0 +1,8 @@
+<section>
+    <h3 class="sub-title">Episodes</h3>
+    <select [(ngModel)]="seasonSelector" (change)="onChange($event)">
+        <option *ngFor="let s of seasons" [value]="s.num">Season {{s.num}}</option>
+    </select>
+
+    <app-select-list *ngIf="currentSeason" [list]="episodeList" (select)="onSelect($event)"></app-select-list>
+</section>

@@ -1,0 +1,21 @@
+<div class="mediacard">
+    <a [routerLink]="[path]">
+        <div class="mediacard-img-container">
+            <img class="mediacard-img" [src]="thumb.small" [alt]="title">
+        </div>
+        <div class="mediacard-title">
+            <h4>{{title}}</h4>
+        </div>
+        <div class="mediacard-statistics">
+            <span class="stats-genre">{{genre}}</span>
+            <span>
+                <img src="/assets/imdb.png" alt="imdb" class="stat-icon">
+                <span class="stats-rating">{{rating}}</span>
+            </span>
+            <span class="stats-viewcount">
+                <img src="/assets/eye-close-up.svg" alt="eye" class="stat-icon">
+                <span>{{viewcount}}</span>
+            </span>
+        </div>
+    </a>
+</div>

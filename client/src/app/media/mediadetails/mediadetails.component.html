@@ -1,0 +1,33 @@
+<section>
+    <h2 class="sub-title">{{title}}</h2>
+    <p class="description">{{description}}</p>
+</section>
+
+<app-season-list    *ngIf="media && media.type == 'tv-show'"
+                    [media]="media"
+                    [seasons]="media.seasons"
+                    (episodeChange)="epChange($event)">
+</app-season-list>
+
+<section *ngIf="url" class="thin">
+    <video controls>
+        <source [src]="url" type="video/mp4">
+    </video>
+
+    <app-media-stats [media]="media"></app-media-stats>
+</section>
+
+<section *ngIf="episode" class="thin">
+    <h3 class="sub-title" *ngIf="episode.title">{{episode.title}}</h3>
+    <table>
+        <tr *ngIf="season">
+            <td>Season</td>
+            <td>{{season.num}}</td>
+        </tr>
+        <tr>
+            <td>Episode</td>
+            <td>{{episode.num}}</td>
+        </tr>
+    </table>
+    <p class="description" *ngIf="episode && episode.description" [innerHTML]="episode.description"></p>
+</section>

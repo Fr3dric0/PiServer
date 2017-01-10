@@ -1,0 +1,10 @@
+{
+  "database": {
+    "username": null,
+    "pwd": null,
+    "domain": "localhost",
+    "port": 27017,
+    "db": "PiServer"
+  },
+  "token-secret": "9DSgyu9JAzctRWgi46frZEGVwUhw"
+}

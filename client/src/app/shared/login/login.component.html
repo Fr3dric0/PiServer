@@ -1,0 +1,19 @@
+<app-logger *ngIf="loginMessage" [message]="loginMessage" [type]="loginStatus"></app-logger>
+<section>
+    <h3 class="sub-title">Login</h3>
+    <p class="description">To use our service, you must have an account</p>
+
+    <p *ngIf="authenticated">User already logged inn</p>
+
+    <form class="form form-login" [formGroup]="form" (ngSubmit)="login(form)" >
+        <div class="input-divider">
+            <label>Email</label>
+            <input type="email" name="email" formControlName="email" placeholder="john.snow@westeros.com" required autofocus>
+        </div>
+        <div class="input-divider">
+            <label>Password</label>
+            <input type="password" name="password" formControlName="password" placeholder="S3cR3t" required>
+        </div>
+        <button class="btn btn-submit" type="submit">Login</button>
+    </form>
+</section>

@@ -1,0 +1,10 @@
+<form class="form form-search" (ngSubmit)="doSearch($event)">
+    <label for="mediaSearch">Search</label>
+    <input (input)="liveSearch($event)" id="mediaSearch" type="text" name="search" placeholder="batman the da...">
+    <button class="btn btn-search" type="submit">
+        <svg width="25" height="25">
+            <circle cx="10" cy="10" r="8"/>
+            <line x1="15" y1="15" x2="24" y2="24"/>
+        </svg>
+      </button>
+    </form>

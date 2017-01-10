@@ -1,0 +1,29 @@
+ul {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    list-style: none;
+}
+
+li {
+    background-color: #CCC;
+    box-sizing: border-box;
+    padding: 5px;
+    padding-left: 0;
+    padding-right: 0;
+    width: 100px;
+    color: #FFF;
+    text-align: center;
+    text-wrap: normal;
+    overflow: hidden;
+
+    box-shadow: rgba(0,0,0, .1) 0.05em 0.05em 0.2em;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.selected {
+    background-color: #F50057
+;
+}

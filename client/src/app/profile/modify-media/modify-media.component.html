@@ -1,0 +1,105 @@
+
+<section>
+    <h2 class="sub-title">Edit media</h2>
+    <p class="description">Make changes and add thumbnails to your media</p>
+</section>
+
+<section>
+    <app-logger *ngIf="mediaFeedback" [message]="mediaFeedback" [type]="mediaFeedbackType"></app-logger>
+    <h3 class="sub-title">{{mediaForm.value.title}}</h3>
+
+    <form class="form form-media" [formGroup]="mediaForm" (ngSubmit)="saveMedia(mediaForm.value, mediaForm.valid)">
+        <div>
+            <h4 class="sub-title">Basic data</h4>
+            <div class="input-divider">
+                <label>Title</label>*
+                <input type="text" name="title" formControlName="title" required>
+            </div>
+            <div class="input-divider">
+                <label>Rating</label>
+                <input type="text" name="rating" formControlName="rating">
+            </div>
+            <div class="input-divider">
+                <label>Type</label>*
+                <input type="text" name="type" formControlName="type" readonly>
+            </div>
+            <div class="input-divider">
+                <label>Genre</label>
+                <input type="text" name="genre" formControlName="genre">
+            </div>
+            <div class="input-divider">
+                <label>Released</label>
+                <input type="date" name="released" formControlName="released">
+            </div>
+            <div class="input-divider">
+                <label>Uploaded</label>
+                <input type="date" name="uploaded" formControlName="uploaded" readonly>
+            </div>
+            <div class="input-divider">
+                <label>Uploader</label>
+                <input type="text" name="uploader" formControlName="uploader" readonly>
+            </div>
+            <button class="btn btn-light" style="margin-bottom: 20px;" type="button"
+                    [disabled]="!mediaForm.valid"
+                    (click)="getImdbData(mediaForm.value.title)">Load IMDB data</button>
+            <small>N.B. This overrides your values</small>
+        </div>
+
+        <div>
+            <div class="input-divider">
+                <label>Description</label>
+                <textarea name="description" formControlName="description" rows="10"></textarea>
+            </div>
+        </div>
+
+        <button [disabled]="!mediaForm.valid" type="submit" class="btn btn-submit">Save</button>
+    </form>
+
+</section>
+
+<section *ngIf="media && media.type == 'movie'">
+    <h3 class="sub-title">Movie-file</h3>
+    <form [formGroup]="movieForm" (ngSubmit)="saveMovie($event)">
+        <div class="input-divider">
+            <label>Moviefile</label>
+            <input type="file" name="movie" formControlName="movie">
+        </div>
+        <button class="btn btn-submit">Upload</button>
+    </form>
+
+    <video *ngIf="media && media.url" controls width="300">
+        <source [src]="media.url" type="video/mp4">
+    </video>
+</section>
+
+<section>
+    <app-logger *ngIf="thumbFeedback.message" [message]="thumbFeedback.message" [type]="thumbFeedback.type"></app-logger>
+    <h3 class="sub-title">Thumbnails</h3>
+
+    <form class="form form-thumb" [formGroup]="thumbForm" (ngSubmit)="saveThumb($event)">
+        <div class="radio-buttons-container">
+            <label>Size</label>
+            <select name="size" formControlName="size">
+                <option value="small">small</option>
+                <option value="large">large</option>
+            </select>
+        </div>
+        <div class="input-divider">
+            <input type="file" name="thumb" formControlName="thumb">
+        </div>
+        <button type="submit" class="btn btn-submit">Upload</button>
+    </form>
+
+    <ul class="thumb-list" *ngIf="media && media.thumb">
+        <app-thumb-container
+                *ngIf="media.thumb.small"
+                [thumb]="media.thumb.small"
+                [label]="'Small'"
+                (delete)="onDelete($event)"></app-thumb-container>
+        <app-thumb-container
+                *ngIf="media.thumb.large"
+                [thumb]="media.thumb.large"
+                [label]="'Large'"
+                (delete)="onDelete($event)"></app-thumb-container>
+    </ul>
+</section>

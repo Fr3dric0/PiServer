@@ -1,0 +1,35 @@
+div {
+    padding-top: .2em;
+    padding-bottom: .2em;
+    padding-left: 1em;
+    padding-right: 1em;
+    color: #444;
+    max-width: 50em;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+    border-radius: 2px;
+    box-shadow: 0.05em 0.05em 0.2em rgba(0, 0, 0, .1);
+
+    text-align: center;
+}
+
+.message {
+    background-color: #CCC;
+}
+
+.warn {
+    background-color: #EF6C00;
+    color: #FFF;
+}
+
+.success {
+    background-color: #43A047;
+    color: #FFF;
+}
+
+.error {
+    background-color: #C62828;
+    color: #FFF;
+}

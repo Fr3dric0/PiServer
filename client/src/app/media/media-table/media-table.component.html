@@ -1,0 +1,25 @@
+<table class="table-media" border="0">
+  <thead>
+  <tr>
+    <td>Title</td>
+    <td>Thumb</td>
+    <td>Type</td>
+    <td class="head-uploaded">Uploaded</td>
+    <td colspan="2">Controls</td>
+  </tr>
+  </thead>
+  <tbody>
+  <tr *ngFor="let m of media">
+    <td>{{m.title}}</td>
+    <td class="thumb-container"><img *ngIf="m.thumb && m.thumb.small" [src]="m.thumb.small" [alt]="m.title"></td>
+    <td>{{m.type}}</td>
+    <td class="body-uploaded">{{m.uploaded}}</td>
+    <td>
+      <button class="btn-transparent" [routerLink]="'/profile/videos/'+m.vidId">Modify</button>
+    </td>
+    <td>
+      <button class="btn-transparent" style="color: #D81B60;" (click)="deleteMedia(m)">Delete</button>
+    </td>
+  </tr>
+  </tbody>
+</table>

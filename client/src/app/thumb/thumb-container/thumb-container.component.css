@@ -1,0 +1,50 @@
+
+li {
+    background-color: rgb(250, 250, 250);
+    color: #5C6BC0;
+    width: 150px;
+    box-shadow: 0.05em 0.05em 0.2em rgba(0, 0, 0, .1);
+    border-radius: 2px;
+    margin: 10px;
+}
+
+li > * {
+    display: block;
+}
+
+h5 {
+    position: relative;
+    text-align: center;
+    padding: 5px;
+    width: 100%;
+    font-weight: 100;
+    font-size: 1.2em;
+    overflow: hidden;
+}
+
+img {
+    position: relative;
+    width: auto;
+    margin-left: auto;
+    margin-right: auto;
+    height: 150px;
+}
+
+button {
+    position: relative;
+    width: 100%;
+    background-color: transparent;
+    color: #D81B60;
+    font-weight: 400;
+    font-size: 1.0em;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #FFF;
+}
+
+button:active {
+    background-color: transparent;
+    color: #AAA;
+}

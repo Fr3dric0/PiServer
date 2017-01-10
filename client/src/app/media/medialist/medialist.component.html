@@ -1,0 +1,5 @@
+<div class="media-list">
+    <app-mediacard *ngFor="let m of media"
+                   [ngClass]="{'hidden': (filter && !query(m))}"
+                   [media]="m"></app-mediacard>
+</div>

@@ -1,0 +1,27 @@
+svg {
+    -webkit-transition: all .2s;
+    transition: all .2s;
+}
+svg circle, svg line {
+    stroke: #5C6BC0;
+    stroke-width: 3;
+    fill: transparent;
+
+}
+
+.btn-search {
+    background-color: #EFEFEF;
+    box-shadow: none;
+}
+
+.btn-search:active {
+    background-color: rgb(245, 245, 245);
+}
+
+.form-search label {
+    color: #5C6BC0;
+}
+
+.form-search input {
+    color: #5C6BC0;
+}

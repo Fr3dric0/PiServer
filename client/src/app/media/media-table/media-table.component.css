@@ -1,0 +1,29 @@
+table {
+    width: 100%;
+}
+
+
+tbody tr {
+    transition: all .3s ease;
+    height: 100px;
+}
+
+tbody tr:hover {
+    background-color: rgb(250, 250, 250);
+}
+
+
+.thumb-container img {
+    width: auto;
+    height: 100px;
+}
+
+/* Remove some content from view, if screen-size gets too small */
+@media screen and (max-width: 550px) {
+    .head-uploaded {
+        display: none;
+    }
+    .body-uploaded {
+        display: none;
+    }
+}

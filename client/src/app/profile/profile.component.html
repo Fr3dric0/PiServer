@@ -1,0 +1,92 @@
+<app-logger *ngIf="message" [message]="feedback" [type]="feedbackType"></app-logger>
+<section>
+    <h3 class="sub-title">Profile</h3>
+    <p class="description">The profile page contains the options to modify your user information or manage the media
+        content</p>
+</section>
+
+<h2 class="sub-title">Account</h2>
+
+<section>
+    <h3 class="sub-title">User information</h3>
+    <form class="form form-user" [formGroup]="userForm" (ngSubmit)="saveUser(userForm.value, userForm.valid)">
+        <div class="input-divider">
+            <label>Firstname</label>
+            <input type="text" name="firstName" formControlName="firstName" required>
+        </div>
+        <div class="input-divider">
+            <label>Lastname</label>
+            <input type="text" name="lastName" formControlName="lastName" required>
+        </div>
+        <div class="input-divider">
+            <label>Email</label>
+            <input type="email" name="email" formControlName="email" required>
+        </div>
+
+        <div class="input-divider">
+            <label>Old password</label>
+            <input type="password" name="oldPassword" formControlName="oldPassword">
+        </div>
+        <div class="input-divider">
+            <label>Password</label>
+            <input type="password" name="password" formControlName="password">
+        </div>
+        <div class="input-divider">
+            <label>confirm password</label>
+            <input type="password" name="confirmPassword" formControlName="confirmPassword">
+        </div>
+        <div class="input-divider">
+            <label>Access Rights</label>
+            <input type="text" name="accessRights" formControlName="accessRights" readonly>
+        </div>
+        <button [disabled]="!userForm.valid" class="btn btn-submit" type="submit">Update user</button>
+    </form>
+</section>
+
+<h2 class="sub-title">Media</h2>
+
+<section>
+    <h3 class="sub-title">Create Media</h3>
+    <form class="form form-media" [formGroup]="mediaForm" (ngSubmit)="saveMedia(mediaForm.value, mediaForm.valid)">
+        <div>
+            <div class="input-divider">
+                <label>Title</label>
+                <input type="text" name="title" formControlName="title" required>
+            </div>
+            <div class="input-divider">
+                <label>Rating</label>
+                <input type="text" name="rating" formControlName="rating">
+            </div>
+            <div class="input-divider">
+                <label>Type</label>
+                <select name="type" formControlName="type" required>
+                    <option *ngFor="let m of mediaTypes" [value]="m">{{m}}</option>
+                </select>
+            </div>
+            <div class="input-divider">
+                <label>Genre</label>
+                <input type="text" name="genre" formControlName="genre">
+            </div>
+            <div class="input-divider">
+                <label>Released</label>
+                <input type="date" name="released" formControlName="released">
+            </div>
+            <button class="btn btn-light" style="margin-bottom: 20px;" type="button"
+                    [disabled]="!mediaForm.valid"
+                    (click)="getImdbData(mediaForm.value.title)">Load IMDB data</button>
+        </div>
+        <div>
+            <div class="input-divider">
+                <label>Description</label>
+                <textarea name="description" formControlName="description" rows="10"></textarea>
+            </div>
+        </div>
+
+        <button [disabled]="!mediaForm.valid" type="submit" class="btn btn-submit">Save</button>
+    </form>
+</section>
+
+<section>
+    <h3 class="sub-title">Manage media</h3>
+    <app-media-table [media]="media"></app-media-table>
+</section>

@@ -1,0 +1,16 @@
+
+<section>
+    <h2 class="sub-title">Media</h2>
+    <p class="description">Here you have our full selection of available movies and tv-shows</p>
+    <app-search (search)="searchMedia($event)" (searchSubmit)="fullSearch($event)"></app-search>
+</section>
+
+<section>
+    <h3 class="sub-title">Movies</h3>
+    <app-medialist [type]="'movie'" [filter]="filter"></app-medialist>
+</section>
+
+<section>
+    <h3 class="sub-title">TV-shows</h3>
+    <app-medialist [type]="'tv-show'" [filter]="filter"></app-medialist>
+</section>
