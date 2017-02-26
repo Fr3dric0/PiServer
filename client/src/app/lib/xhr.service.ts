@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { AuthService } from '../shared/auth/auth.service';
-import {Headers} from "@angular/http";
+import { Headers } from "@angular/http";
 
 export interface XHR {
     url: string;
@@ -10,8 +9,6 @@ export interface XHR {
 
 @Injectable()
 export class XHRService {
-
-    constructor(private auth: AuthService) { }
 
     get(opt: XHR, headers?: Headers, body?: FormData | Object): Promise<any> {
         return new Promise((resolve, reject) => {

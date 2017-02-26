@@ -5,11 +5,11 @@ import { Observable } from 'rxjs/Observable';
 
 import { AuthService } from './auth/auth.service';
 
-import {domain} from '../globals';
 import {User} from "../models/user";
 
 @Injectable()
 export class UserService {
+    path: string = '/api/users';
 
     constructor(private http: Http,
                 private authService: AuthService) {}
@@ -19,7 +19,7 @@ export class UserService {
         headers.append('Authorization', this.authService.getToken());
         let options = new RequestOptions({headers});
 
-        return this.http.get(`${domain}/users`, options)
+        return this.http.get(this.path, options)
             .map(res => res.json() || {});
     }
 
@@ -29,7 +29,7 @@ export class UserService {
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
         const body = this.createPostBody(user);
 
-        return this.http.put(`${domain}/users`, body, { headers })
+        return this.http.put(this.path, body, { headers })
             .map(res => res.json() || {});
     }
 

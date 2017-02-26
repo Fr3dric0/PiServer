@@ -10,6 +10,7 @@ import {domain} from '../../globals';
 export class AuthService {
     // BehavioutSubject lets us observe through an observable
     // which suits our needs more
+
     private loginValueChange = new BehaviorSubject<boolean>(false);
     loginStatus = this.loginValueChange.asObservable();
     path: string = '/api/auth/token';

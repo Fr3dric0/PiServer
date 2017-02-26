@@ -4,13 +4,12 @@ import { XHRService } from '../lib/xhr.service';
 import {Http, Headers, RequestOptions} from "@angular/http";
 import {Observable} from "rxjs";
 import "rxjs/add/observable/from";
-import {domain} from "../globals";
-import {Media, Season} from "../models/media";
-import {Form} from "@angular/forms";
+import { Media, Season } from "../models/media";
+
 
 @Injectable()
 export class MediaService {
-    path: string = domain+'/videos';
+    path: string = '/api/videos';
 
     constructor(private http: Http,
                 private auth: AuthService,
@@ -28,31 +27,30 @@ export class MediaService {
     createMedia(media: Media): Observable<any> {
         let headers = this.auth.authHeader();
         let req = new RequestOptions({ headers });
-        return this.http.post(`${domain}/videos`, media, req)
+        return this.http.post(this.path, media, req)
             .map( res => res.json());
     }
 
     saveMedia(media:Media): Observable<any> {
         let headers = this.auth.authHeader();
         let req = new RequestOptions({ headers });
-        return this.http.put(`${domain}/videos/${media.vidId}`, media, req)
+        return this.http.put(`${this.path}/${media.vidId}`, media, req)
             .map( res => res.json());
     }
 
     deleteMedia(media: Media): Observable<any> {
         let headers = this.auth.authHeader();
-        const path = `${domain}/videos/${media.vidId}`;
-        return this.http.delete(path, { headers })
+
+        return this.http.delete(`${this.path}/${media.vidId}`, { headers })
             .map(res => res.json() || {});
     }
 
     saveThumb(media: Media, data): Promise<any> {
         return new Promise((resolve, reject) => {
-            const url = `${domain}/videos/${media.vidId}/thumb`;
             const xhr = new XMLHttpRequest();
             const formData = new FormData(data);
 
-            xhr.open('post', url);
+            xhr.open('post', `${this.path}/${media.vidId}/thumb`);
 
             //xhr.setRequestHeader('Content-Type', 'multipart/form-data');
             xhr.setRequestHeader('Authorization', this.auth.getToken());
@@ -92,7 +90,7 @@ export class MediaService {
         const formData = new FormData(form);
 
         return this.xhr.post({
-            url: `${domain}/videos/${media.vidId}/vid`,
+            url: `${this.path}/${media.vidId}/vid`,
             token: this.auth.getToken()
         }, headers, formData);
     }
@@ -102,7 +100,7 @@ export class MediaService {
         const headers = this.auth.authHeader();
         const req = new RequestOptions({ headers });
 
-        return this.http.get(`${domain}/videos/${media.vidId}/${season.num}`, req)
+        return this.http.get(`${this.path}/${media.vidId}/${season.num}`, req)
             .map(res => res.json());
     }
 
@@ -110,7 +108,7 @@ export class MediaService {
         const headers = this.auth.authHeader();
         const req = new RequestOptions({ headers });
 
-        return this.http.delete(`${domain}/videos/${media.vidId}/thumb/${size}`, req)
+        return this.http.delete(`${this.path}/${media.vidId}/thumb/${size}`, req)
             .map(res => res.json());
     }
 

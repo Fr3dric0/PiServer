@@ -5,10 +5,10 @@ import { UserService } from '../shared/user.service';
 import { MediaService } from '../media/media.service';
 import { IMDBService } from '../media/imdb.service';
 import { User } from '../models/user';
-import {Media} from "../models/media";
-import { domain } from '../globals';
-import {IMDB} from "../models/imdb";
-import {DateFormatter} from "../lib/dateformatter";
+import { Media } from "../models/media";
+import { IMDB } from "../models/imdb";
+
+import { DateFormatter } from "../lib/dateformatter";
 
 
 @Component({
@@ -22,8 +22,8 @@ export class ProfileComponent implements OnInit {
     media: Media[];
     feedback: string;
     feedbackType: string;
-    domain: string = domain;
-    private mediaTypes = ['movie', 'tv-show'];
+
+    private mediaTypes: String[] = ['movie', 'tv-show'];
 
     constructor(private fb: FormBuilder,
                 private userService: UserService,
@@ -65,9 +65,10 @@ export class ProfileComponent implements OnInit {
 
         this.ms.getAll()
             .subscribe((data:Media[]) => {
+                console.log(data);
                 this.media = data;
             }, (err) => {
-
+                console.error(err);
             });
 
         this.mediaForm = this.fb.group({

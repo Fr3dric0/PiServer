@@ -13,6 +13,11 @@ export class MediaTableComponent implements OnInit {
     _media: Media[];
     @Input()
     set media(media: Media[]) {
+        // Prevent getting objects which is not of type array.
+        if (Object.prototype.toString.call(media) !== '[object Array]') {
+            this._media = undefined;
+            return;
+        }
         this._media = media;
     }
     get media(): Media[] {

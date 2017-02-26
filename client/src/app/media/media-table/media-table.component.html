@@ -8,10 +8,12 @@
     <td colspan="2">Controls</td>
   </tr>
   </thead>
-  <tbody>
+  <tbody *ngIf="media">
   <tr *ngFor="let m of media">
     <td>{{m.title}}</td>
-    <td class="thumb-container"><img *ngIf="m.thumb && m.thumb.small" [src]="m.thumb.small" [alt]="m.title"></td>
+    <td class="thumb-container">
+      <img *ngIf="m.thumb && m.thumb.small" [src]="m.thumb.small" [alt]="m.title">
+    </td>
     <td>{{m.type}}</td>
     <td class="body-uploaded">{{m.uploaded}}</td>
     <td>

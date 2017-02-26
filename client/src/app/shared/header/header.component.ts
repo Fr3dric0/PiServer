@@ -9,7 +9,7 @@ import { Router } from '@angular/router';
 })
 export class HeaderComponent implements OnInit {
     @Output() loginChange = new EventEmitter();
-    icon: string = '/assets/raspi.png';
+    icon: string = '/resource/raspi.png';
     title: string = 'PiServer';
     authenticated: boolean = false;
 

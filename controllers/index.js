@@ -10,7 +10,7 @@ router.get('/', function (req, res, next) {
 /////////////////////////////
 //      404 API-ERROR      //
 /////////////////////////////
-router.get('*', (req, res, next) => {
+router.all('*', (req, res, next) => {
     const err = new Error(`Cannot find route ${req.url}`);
     err.status = 404;
     next(err);
