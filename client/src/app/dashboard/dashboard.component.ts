@@ -1,19 +1,16 @@
-import { Component, OnInit } from '@angular/core';
-import { Http, Response } from '@angular/http';
+import { Component } from '@angular/core';
+
 import 'rxjs/add/operator/map';
 
 @Component({
     selector: 'app-dashboard',
     templateUrl: './dashboard.component.html',
-    styleUrls: [ './dashboard.component.css' ]
+    styleUrls: [ './dashboard.component.scss' ]
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent {
 
-    constructor(private http: Http) {
+    constructor() {
     }
 
-    ngOnInit() {
-
-    }
 
 }

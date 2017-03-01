@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 
 import { AuthService } from '../auth/auth.service';
+import { NotificationsService } from 'angular2-notifications';
 
 @Component({
     selector: 'app-login',
@@ -16,7 +17,8 @@ export class LoginComponent implements OnInit {
     authenticated: boolean = false;
     constructor(private fb: FormBuilder,
                 private router: Router,
-                private auth: AuthService) {
+                private auth: AuthService,
+                private notify: NotificationsService) {
     }
 
     ngOnInit() {
@@ -39,25 +41,23 @@ export class LoginComponent implements OnInit {
             return;
         }
 
-        this.loginStatus = 'message';
-        this.loginMessage = 'Logging in...';
+        this.notify.bare('Authenticating', 'Trying to authenticate user...');
 
         this.auth.authenticate(form.value.email, form.value.password)
             .then( (success) => {
-                this.loginMessage = "Login Successful!";
-                this.loginStatus = 'success';
+                this.notify.success('Authenticated',
+                    `<p>You have been successfully authenticated!</p>
+                     <p>Redirected shortly...</p>`);
 
                 setTimeout(() => {
                     this.router.navigate(['/media'])
                 }, 500);
             } )
             .catch( (err) => {
-                console.error(err);
-                this.loginStatus = 'error';
-                if (err.status == 403) {
-                    this.loginMessage = 'Wrong email or password!';
+                if (err.status == 403 || err.status == 400) {
+                    this.notify.error('Not Authenticated', 'Wrong email or password');
                 } else {
-                    this.loginMessage = JSON.stringify(err.json()) || 'Unknown error';
+                    this.notify.error('Unknown Error', err.json() || 'Unknown error');
                 }
             } );
     }

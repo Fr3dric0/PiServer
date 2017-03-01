@@ -1,23 +1,24 @@
 import { Injectable } from '@angular/core';
-import {Http, RequestOptions, Headers, URLSearchParams} from '@angular/http';
+import { Http, RequestOptions, Headers, URLSearchParams } from '@angular/http';
 
 import { Observable } from 'rxjs/Observable';
 
 import { AuthService } from './auth/auth.service';
 
-import {User} from "../models/user";
+import { User } from "../models/user";
 
 @Injectable()
 export class UserService {
     path: string = '/api/users';
 
     constructor(private http: Http,
-                private authService: AuthService) {}
+                private authService: AuthService) {
+    }
 
     getDetails(): Observable<any> {
         let headers = new Headers();
         headers.append('Authorization', this.authService.getToken());
-        let options = new RequestOptions({headers});
+        let options = new RequestOptions({ headers });
 
         return this.http.get(this.path, options)
             .map(res => res.json() || {});
@@ -37,7 +38,7 @@ export class UserService {
         const urlParam = new URLSearchParams();
 
         for (let key in user) {
-            urlParam.append(key, user[key]);
+            urlParam.append(key, user[ key ]);
         }
 
         return urlParam.toString();

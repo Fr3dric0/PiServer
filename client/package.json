@@ -22,6 +22,7 @@
     "@angular/platform-browser": "*",
     "@angular/platform-browser-dynamic": "*",
     "@angular/router": "*",
+    "angular2-notifications": "^0.4.53",
     "core-js": "*",
     "rxjs": "*",
     "ts-helpers": "*",

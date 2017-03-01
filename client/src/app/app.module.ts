@@ -30,6 +30,7 @@ import { MediaDetailsComponent } from './media/mediadetails/mediadetails.compone
 import { SeasonListComponent } from './media/season-list/season-list.component';
 import { SelectListComponent } from './lib/select-list/select-list.component';
 import { MediaStatsComponent } from './media-stats/media-stats.component';
+import { SimpleNotificationsModule } from 'angular2-notifications';
 
 @NgModule({
     declarations: [
@@ -58,7 +59,8 @@ import { MediaStatsComponent } from './media-stats/media-stats.component';
         FormsModule,
         ReactiveFormsModule,
         HttpModule,
-        AppRoutingModule
+        AppRoutingModule,
+        SimpleNotificationsModule.forRoot()
     ],
     providers: [
         AuthService,

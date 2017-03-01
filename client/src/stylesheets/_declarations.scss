@@ -1,0 +1,38 @@
+
+
+$primary-color: #3F51B5; // Proposed color (not determined)
+$dark-primary: #303F9F;
+$light-primary: #C5CAE9; // Used for buttons on hover
+$primary-hover: #5C6BC0;
+
+$primary-background-color: #EFEFEF;
+$light-background-color: rgb(250, 250, 250);
+$secondary-background-color: #FFF;
+
+$shadow: rgba(0,0,0, .1) 0.1em 0.1em 0.2em;
+$shadow-hover: rgba(0,0,0, .05) 0.12em 0.12em 0.23em;
+$shadow-active: none;
+
+$divider-color: #BDBDBD;
+$accent-color: #FF4081;
+$dark-accent-color: #F50057;
+
+$primary-text: #212121;
+$secondary-text: #757575;
+$icon-color: #FFF;
+
+$anchor-color: #FF4081;
+
+$primary-font-family: 'Roboto', Helvetica, Arial, sans-serif;
+
+// Defines the default transition animation
+@mixin transition() {
+  -webkit-transition: all .2s ease;
+  -moz-transition: all .2s ease;
+  -o-transition: all .2s ease;
+  transition: all .2s ease;
+}
+
+@mixin border-radius() {
+  border-radius: 2px;
+}
